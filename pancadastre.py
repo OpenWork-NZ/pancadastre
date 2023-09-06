@@ -38,7 +38,6 @@ class Projection:
 
 class Unit:
   def __init__(self, areaUnit, linearUnit, volumeUnit, temperatureUnit, pressureUnit, angularUnit, directionUnit):
-    # Ask Andrew
     self.areaUnit = areaUnit
     self.linearUnit = linearUnit
     self.volumeUnit = volumeUnit
@@ -48,14 +47,38 @@ class Unit:
     self.directionUnit = directionUnit
 
 class Monument:
-  def __init__(self, name, point, state, type, condition):
+  def __init__(self, name, point, state, type, condition, properties = None):
     self.name = name
     self.point = point
     self.state = state
     self.type = type
     self.condition = condition
+    self.properties_ = properties
     self.point.monuments.append(self)
     # Modelling remonumenting?
+
+  @property
+  def properties(self):
+    if self.properties_ is not None: return self.properties_
+    return {
+      'name': {
+        'label': self.name,
+        'hasPart': [
+          # TODO: What else is in "hasPart"?
+          {'type': "Provenance", 'label': getattr(self.point, 'state', None)},
+          {'type': "Stamp", 'label': self.type} # Is this right?
+        ]
+      },
+      'ptQuality': self.point.observation.distanceQuality
+          if self.point.observation is not None else None,
+      'purpose': self.point.purpose,
+      'comment': None, # TODO: Capture this data!
+      'monumentedBy': {
+        'monumentForm': self.type, # TODO: Namespace
+        'monumentCondition': self.condition, # TODO: Namespace
+        'monumentState': self.state, # TODO: Namespace
+      }
+    }
 
 class Point:
   def __init__(self, survey, name, state, northing, easting, objID = None):
@@ -102,17 +125,34 @@ class Point:
     return Point(self.survey, self.name, self.state, self.northing/other, self.easting/other, str(self.objID) + "/" + str(other))
 
 class Parcel:
-  def __init__(self, name, area, type, state, klass, format, center, geom, titleDoc, address=None, desc = None):
-    self.name = name
-    self.area = area
-    self.type = type
-    self.state = state
-    self.klass = klass
+  def __init__(self, name, area, type, state, klass, format, center, geom, titleDoc, address=None, desc = None, properties = None):
+    props = properties or {}
+    self.name = name or props['name']['label']
+    self.area = area or props['area']
+    self.type = type or props['parcelType']
+    self.state = state or props['state']
+    self.klass = klass or props['class']
+    self.desc = desc or props['comment']
     self.format = format
     self.center = center # Do we want?
     self.geom = geom
-    self.titleDoc = titleDoc # Contains LandXML Title element or CSDM interestRef property, currently unused.
+    self.titleDoc = titleDoc or props['interestRef'] # Contains LandXML Title element or CSDM interestRef property.
     self.address = address # Do we want?
+    self.properties = properties
+    if properties is None: self.populateProperties()
+
+  @staticmethod
+  def fromProperties(format, center, geom, properties, address = None):
+    return Parcel(None, None, None, None, None, format, center, geom, None, address = address, properties = properties)
+
+  def populateProperties(self):
+    self.properties['name'] = {'label': self.name, 'hasPart': []}
+    self.properties['area'] = self.area
+    self.properties['parcelType'] = self.type
+    self.properties['state'] = self.state
+    self.properties['class'] = self.klass
+    self.properties['interestRef'] = self.titleDoc
+    pass
 
 class Address: # Ask Nick if there's a better address model
   def __init__(self, type, num, roadNameType, roadName, roadType, adminArea):
@@ -228,7 +268,6 @@ class Survey:
 
 class SurveyMetadata:
   def __init__(self, name, firm, surveyor, type, jurisdiction, format, purpose, headOfPower, adminAreas, personnel, annotations):
-    # Ask Andrew what's needed here
     self.name = name
     self.firm = firm
     self.surveyor = surveyor
@@ -270,12 +309,54 @@ class InstrumentSetup:
     self.point.instruments.append(self)
     self.observations = []
 
+class Measure:
+  def __init__(self, equipment, featureOfInterest, dist, distType, azimuth, azimuthType, date, distanceQuality, distanceAccuracy, angleQuality, angleAccuracy, radius = None, is_clockwise = None, arcType = None, properties = None):
+    props = properties or {}
+    result = props.get("hasResult", {})
+    self.equipment = equipment
+    self.featureOfInterest = featureOfInterest or props.get("hasFeatureOfInterest")
+    self.dist = dist or result.get("distance") or result.get("arcLength")
+    self.distType = distType or props.get("distanceType")
+    self.azimuth = azimuth or result.get("angle") or result.get("chordAngle")
+    self.azimuthType = azimuthType # What should this be?
+    self.date = date or props.get("resultTime")
+    self.distanceQuality = distanceQuality or props.get("distanceQuality")
+    self.distanceAccuracy = distanceAccuracy or props.get("distanceAccuracy")
+    self.angleQuality = angleQuality or props.get("angleQuality")
+    self.angleAccuracy = angleAccuracy or props.get("angleAccuracy")
+    self.radius = radius or result.get("radius")
+    self.is_clockwise = is_clockwise or result.get("orientation") == "cw"
+    self.arcType = arcType or props.get("angleType")
+    self.properties = props
+    if properties is None: self.populateProperties()
+
+  @staticmethod
+  def fromProperties(equipment, properties):
+    return Measure(equipment, None, None, None, None, None, None, None, None, None, None, properties = properties)
+
+  def populateProperties(self):
+    self.properties["hasFeatureOfInterest"] = self.featureOfInterest
+    if not isinstance(self.properties["hasResult"], dict): self.properties["hasResult"] = {}
+    self.properties["hasResult"]["distance"] = self.properties["hasResult"]["arcLength"] = self.dist
+    self.properties["distanceType"] = self.distType
+    self.properties["hasResult"]["angle"] = self.properties["hasResult"]["chordAngle"] = self.azimuth
+    self.properties["resultTime"] = self.date
+    self.properties["distanceQuality"] = self.distanceQuality
+    self.properties["distanceAccuracy"] = self.distanceAccuracy
+    self.properties["angleQuality"] = self.angleQuality
+    self.properties["angleAccuracy"] = self.angleAccuracy
+    self.properties["radius"] = self.radius
+    self.properties["orientation"] = "cw" if self.is_clockwise else "ccw"
+    self.properties["angleType"] = self.arcType
+
 class Observation:
   pass
 
 class ReducedObservation(Observation):
-  def __init__(self, purpose, setup, targetSetup, azimuth, horizDist, equipment, distType, azimuthType, name, date, properties = {}):
-    self.purpose = purpose
+  def __init__(self, purpose, setup, targetSetup, azimuth, horizDist, equipment, distType, azimuthType, name, date, properties = None, distanceQuality = None, distanceAccuracy = None, angleQuality = None, angleAccuracy = None, measure = None):
+    # TODO: Fully split out measurement properties from Reduced Observations...
+    props = properties or {}
+    self.purpose = purpose or props.get("purpose")
     self.setup = setup
     self.targetSetup = targetSetup
     self.azimuth = azimuth
@@ -283,12 +364,18 @@ class ReducedObservation(Observation):
     self.equipment = equipment
     self.distType = distType
     self.azimuthType = azimuthType
-    self.name = name
+    self.name = name or props.get("name", {}).get("label")
     self.date = date
-    self.properties = properties
+    self.properties = properties or {}
+    self.distanceQuality = distanceQuality
+    self.distanceAccuracy = distanceAccuracy
+    self.angleQuality = angleQuality
+    self.angleAccuracy = angleAccuracy
     self.setup.observations.append(self)
     if self.targetSetup is not None:
       self.targetSetup.observations.append(self)
+    if properties is None: self.populateProperties()
+    self.measure = measure
 
   @property
   def setupPoint(self): return self.setup.point
@@ -302,24 +389,44 @@ class ReducedObservation(Observation):
       if self.setupPoint == segment.start and self.targetPoint == segment.end: return segment
       if self.targetPoint == segment.start and self.setupPoint == segment.end: return segment
 
+  def populateProperties(self):
+    # Start leaving hasPart blank...
+    self.properties['name'] = {'label': self.name, 'hasPart': []}
+    self.properties['ptQuality'] = self.point.observation.distanceQuality
+    self.properties['purpose'] = self.purpose
+    self.properties['comment'] = None
+    for monument in self.setupPoint.monuments:
+      self.properties['monumentedBy'] = {
+        'monumentForm': monument.type,
+        'monumentCondition': monument.condition,
+        'monumentState': monument.state
+      }
+      break
+
 class ReducedArcObservation(Observation):
-  def __init__(self, purpose, setup, targetSetup, chordAzimuth, radius, length, is_clockwise, equipmentUsed, arcLengthAccuracy, arcType, name, date, properties = {}):
-    self.purpose = purpose
+  def __init__(self, purpose, setup, targetSetup, chordAzimuth, radius, length, is_clockwise, equipmentUsed, arcLengthAccuracy, arcType, name, date, properties = None, distanceQuality = None, distanceAccuracy = None, angleQuality = None, measure = None):
+    props = properties or {}
+    self.purpose = purpose or props.get("purpose")
     self.setup = setup
     self.targetSetup = targetSetup
-    self.chordAzimuth = chordAzimuth
-    self.radius = radius
-    self.length = length
-    self.is_clockwise = is_clockwise
-    self.equipmentUsed = equipmentUsed
-    self.arcLengthAccuracy = arcLengthAccuracy
-    self.arcType = arcType
+    self.chordAzimuth = chordAzimuth or props.get("hasResult", {}).get("angle")
+    self.radius = radius or props.get("hasResult", {}).get("radius")
+    self.length = length or props.get("hasResult", {}).get("distance")
+    self.is_clockwise = is_clockwise or props.get("rot") == 'cw'
+    self.equipmentUsed = equipmentUsed or props.get("equipmentUsed")
+    self.arcLengthAccuracy = arcLengthAccuracy or props.get("angleAccuracy")
+    self.arcType = arcType or props.get("angleType")
     self.name = name
-    self.date = date
-    self.properties = properties
+    self.date = date or (props.get("resulttime") and datetime.fromisoformat(props["resultTime"]))
+    self.properties = properties or {}
+    self.distanceQuality = distanceQuality or props.get("distanceQuality")
+    self.distanceAccuracy = distanceAccuracy or props.get("distanceAccuracy")
+    self.angleQuality = angleQuality or props.get("angleQuality")
     self.setup.observations.append(self)
     if self.targetSetup is not None:
       self.targetSetup.observations.append(self)
+    if self.properties == {}: self.populateProperties()
+    self.measure = measure
 
   @property
   def line(self):
@@ -327,9 +434,25 @@ class ReducedArcObservation(Observation):
       if self.setupPoint == segment.start and self.targetPoint == segment.end: return segment
       if self.targetPoint == segment.start and self.setupPoint == segment.end: return segment
 
+  def populateProperties(self):
+    self.properties['purpose'] = self.purpose
+    self.properties['hasFeatureOfInterest'] = self.setup.point.objID
+    self.properties['resultTime'] = self.date
+    self.properties['hasResult'] = {
+        'distance': self.length, 'angle': self.chordAzimuth, 'radius': self.radius
+    }
+    self.properties['rot'] = "cw" if obs.is_clockwise else "ccw"
+    self.properties['distanceType'] = 'icsmdistancetype:ellipsoidal' # What should this be?
+    self.properties['distanceProvenance'] = self.setup.point.state # Reformat?
+    self.properties['angleType'] = self.arcType # Reformat?
+    self.properties['equipmentUsed'] = self.equipmentUsed
+    self.properties['distanceQuality'] = self.distanceQuality
+    self.properties['angleQuality'] = self.angleQuality
+    self.properties['distanceAccuracy'] = self.distanceAccuracy
+    self.properties['angleAccuracy'] = self.arcLengthAccuracy
 
 class RedHorizPos(Observation): # Spell out "Reduced"
-  def __init__(self, desc, name, objID, setup, date, horizDatum, northing, easting, horizFix, order, properties = {}):
+  def __init__(self, desc, name, objID, setup, date, horizDatum, northing, easting, horizFix, order, properties = None, distanceQuality = None, distanceAccuracy = None, angleQuality = None, angleAccuracy = None):
     self.desc = desc
     self.name = name
     self.objID = objID
@@ -340,9 +463,30 @@ class RedHorizPos(Observation): # Spell out "Reduced"
     self.easting = easting
     self.horizFix = horizFix
     self.order = order
-    self.properties = properties
+    self.properties = properties or {}
+    self.distanceQuality = distanceQuality
+    self.distanceAccuracy = distanceAccuracy
+    self.angleQuality = angleQuality
+    self.angleAccuracy = angleAccuracy
     self.setup.observations.append(self)
     self.line = None
+    if self.properties == {}: self.populateProperties()
+
+  def populateProperties(self):
+    self.properties['hasFeatureOfInterest'] = self.setup.point.objID # FIXME: Parse association!
+    self.properties['resultTime'] = self.date
+    self.properties['comment'] = self.desc
+    self.properties['projection'] = self.horizDatum
+    self.properties['horizontalFix'] = self.horizFix
+    self.properties['hasResult'] = {'coord': [self.northing, self.easting]}
+    self.properties['distanceType'] = 'icsmdistancetype:ellipsoidal'
+    self.properties['distanceProvenance'] = self.setup.point.state # Reformat?
+    self.properties['angleType'] = self.arcType # Reformat?
+    self.properties['order'] = self.order
+    self.properties['distanceQuality'] = self.distanceQuality # TODO: Thesaurus
+    self.properties['angleQuality'] = self.angleQuality
+    self.properties['distanceAccuracy'] = self.distanceAccuracy
+    self.properties['angleAccuracy'] = self.angleAccuracy
 
 #class ReducedVertPos(Observation) for 3D?
 
@@ -543,7 +687,7 @@ def importLandXML(file):
           observation.append(RedHorizPos(observation.get('desc'),
               observation.get('name'), observation.get('oID'),
               instrumentsIndex[observation.get('setupID')],
-              datetime.parse(observation.get('date'), '%Y-%m-%d'),
+              datetime.fromisoformat(observation.get('date')),
               observation.get('horizontalDatum'),
               float(observation.get('latitude')), float(observation.get('longitude')),
               observation.get('horizontalFix'), int(observation.get('order'))))
@@ -554,89 +698,86 @@ def importLandXML(file):
 
   return Cadastre(proj, features, units, monuments, points, parcels, survey)
 
-def importTopology(file):
-  data = derefJSONLinks(json.load(file))
+def importCSDM(file):
+  from copy import deepcopy
+  data = json.load(file)
   assert data["type"] == "FeatureCollection"
-  # TODO: provenance schema?
-  surveyMeta = SurveyMetadata(data["name"], "TODO: firm", "TODO: surveyer", "TODO: type", None, "TODO: format", data["purpose"], None, None, None, None)
-  proj = Projection(str(data["crs"])) if "crs" in data else None
-  points = []
-
+  projection = Projection(data.get("horizontalCRS"))
+  metadata = SurveyMetadata(data["name"], None, None, None, None, None, data["purpose"], None, None, None, None)
+  
+  instruments = []
+  def instrument(*args):
+    ret = InstrumentSetup(*args)
+    instruments.append(ret)
+    return ret
+  
   monuments = []
-  for feature in data["features"]:
-    assert feature is not None
-    assert feature["type"] == "Feature"
-    assert feature["geometry"] is None or feature["geometry"]["type"] == "Point"
+  points = []
+  observations = []
+  measures = {}
 
-    pt = None
-    if feature["geometry"] is not None:
-      coords = feature["geometry"]["coordinates"]
-      pt = Point(feature.get("fromSurvey"), feature["id"], None, coords[1], coords[0]) # state?
-      points.append(pt)
-    props = feature.get("properties", {"name": {}})
-    monuments.append(Monument(props["name"].get("label"), pt,
-        feature.get("ptQuality"), feature.get("featureType"), None)) # Condition? State?
-
-  observations = {}
-  for i, group in enumerate(data["vectorObservations"]):
-    assert group["type"] == "FeatureCollection"
-    assert group["featureType"] == "sosa:ObservationCollection"
-    subObservations = []
-
+  for group in data["vectorObservations"]:
     for observation in group["features"]:
-      assert observation["type"] == "Feature"
-      assert observation["geometry"] is None or observation["geometry"]["type"] == "LineString"
+      measure = Measure.fromProperties(group["properties"], observation["properties"])
+      measures[observation["properties"]["hasFeatureOfInterest"]] = measure
 
-      props = observation.get("properties", {"hasResult": {}})
-      kind = props.get("distanceType")
-      item = None
-      if kind == "icsmdistancetype:ellipsoidal":
-        item = ReducedArcObservation("TODO: purpose", "TODO: setup", "TODO: targetSetup", props["hasResult"].get("angle"), "TODO: radius", props["hasResult"].get("distance"), "TODO: isClockwise", "TODO: equipmentUsed", props.get("angleAccuracy"), props.get("angleType"), props.get("hasFeatureOfInterest"))
-      elif "pose" in props["hasResult"]:
-        item = ReducedArcObservation("TODO: purpose", "TODO: setup", "TODO: targetSetup", props["hasResult"]["pose"].get("angles", {}).get("yaw"), "TODO: radius", props["hasResult"].get("distance"), "TODO: isClockwise", "TODO: equipmentUsed", "TODO angleArrucay", "TODO: angleType", props.get("hasFeatureOfInterest"))
+  pointsIndex = {}
+  for collection in data["points"]:
+    for monument in collection["features"]:
+      point = Point(None, None, monument["properties"]["monumentedBy"]["monumentState"], monument["place"]["coordinates"][0], monument["place"]["coordinates"][1], monument["id"])
+      points.append(point)
+      pointsIndex[monument["id"]] = deepcopy(monument)
+      pointsIndex[monument["id"]][""] = point
+      # The observations will be initialized later
+      monuments.append(Monument(monument["properties"]["name"]["label"], point, monument["properties"]["monumentedBy"]["monumentState"], monument["properties"]["monumentedBy"]["monumentForm"], monument["properties"]["monumentedBy"]["monumentCondition"], properties = monument["properties"]))
+
+  def n(comment): return None # Indicates a TODO...
+  def d(x):
+    if isinstance(x, dict): return x["$ref"]
+    else: return x
+
+  segments = {}
+  observationGroups = {} # TODO: Build!
+  for group in data["observedVectors"]:
+    observations = []
+    for observation in group["features"]:
+      measure = measures[observation["id"]]
+      if observation["topology"]["type"].lower() == "linestring":
+        for i in range(1, len(observation["topology"]["references"])):
+          start = pointsIndex[d(observation["topology"]["references"][i-1])]
+          end = pointsIndex[d(observation["topology"]["references"][i])]
+          # Distance comes from vector observations, we might want to split that class out!
+          obs = ReducedObservation(None, instrument(start["id"], start["properties"]["name"]["label"], None, start[""]), instrument(end["id"], end["properties"]["name"]["label"], None, end[""]), measure.azimuth, measure.dist, measure.equipment, measure.distType, measure.azimuthType, observation["id"], start["time"], start["properties"], measure = measure)
+          observations.append(obs)
+
+          geom = Line(observation["id"], start[""], end[""])
+          segments[observation["id"]] = geom
+      elif observation["topology"]["type"].lower() == "arc":
+        start = pointsIndex[d(observation["topology"]["references"][0])]
+        mid = pointsIndex[d(observation["topology"]["references"][1])]
+        end = pointsIndex[d(observation["topology"]["references"][2])]
+        # Distance, radius, etc comes from vector observations.
+        obs = ReducedArcObservation(None, instrument(start["id"], start["properties"]["name"]["label"], None, start[""]), instrument(end["id"], end["properties"]["name"]["label"], None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start["time"], start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
+        observations.append(obs)
+
+        geom = Curve(observation["id"], measure.is_clockwise, measure.radius, start[""], mid[""], end[""])
+        segments[observation["id"]] = geom
       else:
-        raise Exception("Unsupported observation type: " + str(kind))
-      subObservations.append(observation)
-    observations[group.get("properties", {}).get("sensor", i)] = subObservations
-
-  def parseGeom(name, el):
-    if el["type"].lower() == "linestring":
-      geom = []
-      lastPoint = None
-      for i, edge in enumerate(el["references"]):
-        if edge is None: continue
-        assert edge["type"] == "Feature"
-        geometry = edge.get("topology", edge.get("geometry", {"type": ""}))
-        assert geometry["type"].lower() == "point"
-        coord = geometry["coordinates"]
-        point = Point(edge.get("fromSurvey"), edge["id"], None, coord[1], coord[0]) # state?
-        points.append(point)
-        if lastPoint: geom.append(Line(name + str(i), lastPoint, point))
-        lastPoint = point
-      return Geom(name, geom)
-    elif el["type"].lower() == "polygon":
-      geom = []
-      for i, edge in enumerate(el["references"]):
-        if edge is None: continue
-        assert edge["type"] == "Feature"
-        geom.extend(parseGeom(edge.get("id", i), edge).segments)
-      return Geom(el.get("id", name), geom)
-    elif el["type"].lower() == "feature":
-      return parseGeom(el.get("id", name), el.get("topology", el.get("geometry", {})))
-    else:
-      raise Exception("Unsupported geometry type: " + el["type"])
+        print("Unexpected observedVector topology-type: ", observation["topology"]["type"])
+    observationGroups[group["id"]] = observations
 
   parcels = []
-  for parcel in data["parcels"]:
-    assert group["type"] == "FeatureCollection"
-    for feature in parcel["features"]:
-      assert feature["type"] == "Feature"
-      geometry = feature.get("topology", feature.get("geometry", {"type": ""}))
-
-      # NOTE: Many of these fields have been moved into the contained features.
-      parcels.append(Parcel(feature["properties"]["name"]["label"], feature["properties"]["area"], parcel["featureType"], feature["properties"]["state"], feature["properties"]["class"], "TODO: format", "TODO: center", [parseGeom(feature["properties"]["name"]["label"], geometry)], feature["properties"]["interestRef"]))
-
-  return Cadastre(proj, {}, None, monuments, points, parcels, Survey(None, [], observations))
+  for parcel in data.get("parcels", []):
+    geoms = []
+    properties = None # I'm not particularly keen on how this bit is structured.
+    for geom in parcel["geom"]:
+      if properties is None: properties = geom["properties"]
+      geoms.append(Geom(geom["id"],
+        [segments.get(ref if isinstance(ref, str) else ref.get('$ref'))
+          for ref in geom["topology"]["references"]]))
+    parcels.append(Parcel.fromProperties(None, None, geoms, properties))
+    
+  return Cadastre(projection, {}, None, monuments, points, parcels, Survey(metadata, instruments, observationGroups))
 
 ## Processors
 class IDList(list):
@@ -777,11 +918,6 @@ def exportJSONfg(data, file = None):
         }
       }
     observedVecs.append(x)
-  # Alternate algorithm:
-  # For reduced observation, select all lines in all parcels where the targetpoint == endpoint.
-  # If not more than one select the objID for that line & that becomes hasFeatureOfInterest.
-  # If more than one find the instrumentID & select the InstrumentSetup, get the pntRef from the instrumentPoint
-  # Select from set of lines the line with the start == that.
   
   ret = {
     '$schema': 'schema.json',
@@ -805,33 +941,17 @@ def exportJSONfg(data, file = None):
           'type': "Point",
           'coordinates': [monument.point.northing, monument.point.easting] if monument.point is not None else []
         },
-        'properties': {
-          'name': {
-            'label': monument.name,
-            'hasPart': [
-              {'type': "Provenance", 'label': getattr(monument.point, 'state', None)},
-              {'type': "Stamp", 'label': monument.type} # Is this right?
-            ],
-            # pointQuality?
-            # purpose?
-            'monumentForm': monument.type,
-            'monumentCondition': monument.condition,
-            'markState': monument.state
-            # comment?
-          }
-        }
+        'properties': monument.properties
       } for i, monument in enumerate(data.monuments)] + observedVecs + [{
-      'type': 'Feature',
-      'id': parcel.name or i,
-      'featureType': 'boundary',
-      'links': [],
-      'time': '', # Appears to be missing from LandXML
-      'place': exportGeom(parcel, 'wgs84'),
-      'geometry': exportGeom(parcel, fileproj),
-      'properties': {
-        'comment': ""
-      } # Place miscallanea here!
-    } for i, parcel in enumerate(data.parcels)]# + [{
+        'type': 'Feature',
+        'id': parcel.name or i,
+        'featureType': 'boundary',
+        'links': [],
+        'time': '', # Appears to be missing from LandXML
+        'place': exportGeom(parcel, 'wgs84'),
+        'geometry': exportGeom(parcel, fileproj),
+        'properties': parcel.properties
+      } for i, parcel in enumerate(data.parcels)]# + [{
 #      'type': "Feature",
 #      'featureType': "sosa:ObservationCollection",
 #      'properties': {
@@ -902,10 +1022,10 @@ def exportCSDM(data, file):
           'distanceType': obs.distType, # Reformat?
           'distanceProvenance': obs.setup.point.state, # Reformat?
           'equipmentUsed': obs.equipment, # Reformat?
-          #'distanceQuality': 'A', # need to model quality!
-          #'angleQuality': 'A', # need to model quality!
-          #'distanceAccuracy': '???', # need to model accuracy!
-          #'angleAccuracy': '???' # need to model accuracy!
+          'distanceQuality': obs.distanceQuality, # TODO: Thesaurus!
+          'angleQuality': obs.angleQuality,
+          'distanceAccuracy': obs.distanceAccuracy,
+          'angleAccuracy': obs.angleAccuracy
          }
     elif isinstance(obs, ReducedArcObservation):
       # Fields not echoed: setup & targetSetup, & purpose
@@ -922,9 +1042,9 @@ def exportCSDM(data, file):
           'distanceProvenance': obs.setup.point.state, # Reformat?
           'angleType': obs.arcType, # Reformat?
           'equipmentUsed': obs.equipmentUsed,
-          #'distanceQuality': 'A', # need to model quality!
-          #'angleQuality': 'A', # need to model quality!
-          #'distanceAccuracy': '???', # need to model accuracy!
+          'distanceQuality': obs.distanceQuality, # TODO: Thesaurus!
+          'angleQuality': obs.angleQuality,
+          'distanceAccuracy': obs.distanceAccuracy,
           'angleAccuracy': obs.arcLengthAccuracy
          }
     elif isinstance(obs, RedHorizPos):
@@ -942,10 +1062,10 @@ def exportCSDM(data, file):
           'distanceProvenance': obs.setup.point.state, # Reformat?
           'angleType': obs.arcType, # depending on type, reformat?
           'order': obs.order,
-          #'distanceQuality': 'A', # need to model quality!
-          #'angleQuality': 'A', # need to model quality!
-          #'distanceAccuracy': '???', # need to model accuracy!
-          #'angleAccuracy': '???' # need to model accuracy!
+          'distanceQuality': obs.distanceQuality, # TODO: Thesaurus!
+          'angleQuality': obs.angleQuality,
+          'distanceAccuracy': obs.distanceAccuracy,
+          'angleAccuracy': obs.angleAccuracy
          }
     else:
       print("Unexpected observation type!", type(obs))
@@ -993,11 +1113,7 @@ def exportCSDM(data, file):
           }
         }],
       }
-    observedVecs.append(x)  # Alternate algorithm:
-  # For reduced observation, select all lines in all parcels where the targetpoint == endpoint.
-  # If not more than one select the objID for that line & that becomes hasFeatureOfInterest.
-  # If more than one find the instrumentID & select the InstrumentSetup, get the pntRef from the instrumentPoint
-  # Select from set of lines the line with the start == that.
+    observedVecs.append(x)
   
   ret = {
     '$schema': 'schema.json',
@@ -1027,24 +1143,7 @@ def exportCSDM(data, file):
           'type': "Point",
           'coordinates': [monument.point.northing, monument.point.easting] if monument.point is not None else []
         },
-        'properties': {
-          'name': {
-            'label': monument.name,
-            'hasPart': [
-              # TODO: What else is in "hasPart"?
-              {'type': "Provenance", 'label': getattr(monument.point, 'state', None)},
-              {'type': "Stamp", 'label': monument.type} # Is this right?
-            ],
-            # ptQuality?
-            'purpose': monument.point.purpose,
-            'comment': None, # TODO: Capture this data!
-            'monumentedBy': {
-              'monumentForm': monument.type, # TODO: Namespace
-              'monumentCondition': monument.condition, # TODO: Namespace
-              'monumentState': monument.state, # TODO: Namespace
-            }
-          }
-        }
+        'properties': monument.properties
       } for i, monument in enumerate(data.monuments)]
     }],
     'observedVectors': observedVecs,
@@ -1061,17 +1160,7 @@ def exportCSDM(data, file):
           'type': 'Polygon',
           'references': [ref(seg.id) for seg in geom.segments]
         },
-        'properties': {
-          'name': {
-            'label': parcel.name,
-            'hasPart': [] # TODO: What are the parts?
-          },
-          'area': parcel.area,
-          'parcelType': parcel.type,
-          'state': parcel.state,
-          'class': parcel.klass,
-          'interestRef': parcel.titleDoc
-        }
+        'properties': parcel.properties
       } for j, geom in enumerate(parcel.geom)]
     } for i, parcel in enumerate(data.parcels)],
     'vectorObservations': [{
@@ -1090,28 +1179,10 @@ def exportCSDM(data, file):
         'id': obs.name or (groupName + str(i)),
         'type': "Feature",
         'geometry': None,
-        'properties': observationProperties(obs)
+        'properties': obs.properties
       } for i, obs in enumerate(group)]
     } for groupName, group in data.survey.observationGroups.items()],
     'features': exportJSONfg(data)["features"] # I (Adrian) question of the value of this...
-#    'features': [{
-#      'type': 'Feature',
-#      'id': parcel.name or i,
-#      'featureType': 'boundary',
-#      'links': [],
-#      'time': '', # Appears to be missing from LandXML
-#      'place': exportGeom(parcel, 'wgs84'),
-#      'geometry': exportGeom(parcel, fileproj),
-#      'properties': {
-#        'comment': ""
-#      } # Place miscallanea here!
-#    } for i, parcel in enumerate(data.parcels)]# + [{
-#      'type': "Feature",
-#      'featureType': "sosa:ObservationCollection",
-#      'properties': {
-#        'usedProcedure': "icsm:XXX"
-#      } # FIXME: This seems incomplete...
-#    } for groupID, group in data.survey.observationGroups.items() for i, observation in enumerate(group)]
   }
   json.dump(ret, file, indent=4)
 
@@ -1240,7 +1311,7 @@ if __name__ == "__main__":
   argparser = argparse.ArgumentParser()
   argparser.add_argument('-X', '--LANDXML', help="LandXML input file", nargs='+')
   argparser.add_argument('-V', '--vocab', help="Jurisdictional vocabulary to align to")
-  argparser.add_argument('-T', '--TOPOLOGY', help="JSON-Topology input file", nargs='+')
+  argparser.add_argument('-C', '--CSDM', help="JSON-Topology input file", nargs='+')
   argparser.add_argument('--interpolate', help="Interpolate curves, possibly specifying length in meters of each segment (default 1m)",
       const=1, type=int, nargs='?')
   argparser.add_argument('--epsg', help="Overwrite the projection being used.")
@@ -1248,7 +1319,6 @@ if __name__ == "__main__":
   argparser.add_argument('-r', '--rdf', help="RDF syntax to output", const="ttl", nargs='?')
   argparser.add_argument('-o', '--output', help="RDF file to output to", const="?.rdf", nargs='?')
   argparser.add_argument('-c', '--csdm', help="CSDM JSON output file", const="?.json", nargs='?')
-  #argparser.add_argument('-t', '--topology', help="JSON-Topology output file")
   args = argparser.parse_args()
 
   wrote_output = False
@@ -1276,13 +1346,10 @@ if __name__ == "__main__":
   for source in args.LANDXML or []:
     with open(source) as f: export(source, importLandXML(f))
     read_input = True
-  for source in args.TOPOLOGY or []:
-    with open(source) as f: export(source, importTopology(f))
+  for source in args.CSDM or []:
+    with open(source) as f: export(source, importCSDM(f))
     read_input = True
 
   if not read_input:
     print("Please specify at least one input file!")
-    argparser.print_help()
-  elif not wrote_output:
-    print("Please specify at least one output file!")
     argparser.print_help()
