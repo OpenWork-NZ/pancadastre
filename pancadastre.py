@@ -74,9 +74,9 @@ class Monument:
       'purpose': self.point.purpose,
       'comment': None, # TODO: Capture this data!
       'monumentedBy': {
-        'monumentForm': self.type, # TODO: Namespace
-        'monumentCondition': self.condition, # TODO: Namespace
-        'monumentState': self.state, # TODO: Namespace
+        'form': self.type, # TODO: Namespace
+        'condition': self.condition, # TODO: Namespace
+        'state': self.state, # TODO: Namespace
       }
     }
 
@@ -127,16 +127,16 @@ class Point:
 class Parcel:
   def __init__(self, name, area, type, state, klass, format, center, geom, titleDoc, address=None, desc = None, properties = None):
     props = properties or {}
-    self.name = name or props['name']['label']
-    self.area = area or props['area']
-    self.type = type or props['parcelType']
-    self.state = state or props['state']
-    self.klass = klass or props['class']
-    self.desc = desc or props['comment']
+    self.name = name or props.get('name', {}).get('label')
+    self.area = area or props.get('area')
+    self.type = type or props.get('parcelType')
+    self.state = state or props.get('state')
+    self.klass = klass or props.get('class')
+    self.desc = desc or props.get('comment')
     self.format = format
     self.center = center # Do we want?
     self.geom = geom
-    self.titleDoc = titleDoc or props['interestRef'] # Contains LandXML Title element or CSDM interestRef property.
+    self.titleDoc = titleDoc or props.get('interestRef') # Contains LandXML Title element or CSDM interestRef property.
     self.address = address # Do we want?
     self.properties = properties
     if properties is None: self.populateProperties()
@@ -397,9 +397,9 @@ class ReducedObservation(Observation):
     self.properties['comment'] = None
     for monument in self.setupPoint.monuments:
       self.properties['monumentedBy'] = {
-        'monumentForm': monument.type,
-        'monumentCondition': monument.condition,
-        'monumentState': monument.state
+        'form': monument.type,
+        'condition': monument.condition,
+        'state': monument.state
       }
       break
 
@@ -724,12 +724,12 @@ def importCSDM(file):
   pointsIndex = {}
   for collection in data["points"]:
     for monument in collection["features"]:
-      point = Point(None, None, monument["properties"]["monumentedBy"]["monumentState"], monument["place"]["coordinates"][0], monument["place"]["coordinates"][1], monument["id"])
+      point = Point(None, None, monument["properties"]["monumentedBy"]["state"], monument["geometry"]["coordinates"][0], monument["geometry"]["coordinates"][1], monument["id"])
       points.append(point)
       pointsIndex[monument["id"]] = deepcopy(monument)
       pointsIndex[monument["id"]][""] = point
       # The observations will be initialized later
-      monuments.append(Monument(monument["properties"]["name"]["label"], point, monument["properties"]["monumentedBy"]["monumentState"], monument["properties"]["monumentedBy"]["monumentForm"], monument["properties"]["monumentedBy"]["monumentCondition"], properties = monument["properties"]))
+      monuments.append(Monument(monument["properties"]["name"]["label"], point, monument["properties"]["monumentedBy"]["state"], monument["properties"]["monumentedBy"]["form"], monument["properties"]["monumentedBy"]["condition"], properties = monument["properties"]))
 
   def n(comment): return None # Indicates a TODO...
   def d(x):
@@ -741,7 +741,8 @@ def importCSDM(file):
   for group in data["observedVectors"]:
     observations = []
     for observation in group["features"]:
-      measure = measures[observation["id"]]
+      # FIXME: Is it a bug if a point doesn't have a measure? Should this be reported?
+      measure = measures.get(observation["id"]) or Measure.fromProperties({}, {})
       if observation["topology"]["type"].lower() == "linestring":
         for i in range(1, len(observation["topology"]["references"])):
           start = pointsIndex[d(observation["topology"]["references"][i-1])]
@@ -770,7 +771,7 @@ def importCSDM(file):
   for parcel in data.get("parcels", []):
     geoms = []
     properties = None # I'm not particularly keen on how this bit is structured.
-    for geom in parcel["geom"]:
+    for geom in parcel["features"]:
       if properties is None: properties = geom["properties"]
       geoms.append(Geom(geom["id"],
         [segments.get(ref if isinstance(ref, str) else ref.get('$ref'))
@@ -1008,69 +1009,7 @@ def exportCSDM(data, file):
   if fileproj[:5] == "epsg:": fileproj = fileproj[5:]
   trans = Transformer.from_crs(fileproj, 'wgs84')
   def ref(id): return id
-  
-  def observationProperties(obs):
-    if isinstance(obs, ReducedObservation):
-      # Fields not echoed: setup & targetSetup, purpose, & azimuthType
-      return {
-          'hasFeatureOfInterest': obs.setupPoint.objID,
-          'resultTime': obs.date,
-          'hasResult': {
-            'distance': obs.horizDist, # or obs.distance depending on type.
-            'azimuth': obs.azimuth
-          },
-          'distanceType': obs.distType, # Reformat?
-          'distanceProvenance': obs.setup.point.state, # Reformat?
-          'equipmentUsed': obs.equipment, # Reformat?
-          'distanceQuality': obs.distanceQuality, # TODO: Thesaurus!
-          'angleQuality': obs.angleQuality,
-          'distanceAccuracy': obs.distanceAccuracy,
-          'angleAccuracy': obs.angleAccuracy
-         }
-    elif isinstance(obs, ReducedArcObservation):
-      # Fields not echoed: setup & targetSetup, & purpose
-      return {
-          'hasFeatureOfInterest': obs.setup.point.objID,
-          'resultTime': obs.date,
-          'hasResult': {
-            'distance': obs.length,
-            'angle': obs.chordAzimuth,
-            'radius': obs.radius
-          },
-          'rot': "cw" if obs.is_clockwise else "ccw",
-          'distanceType': 'icsmdistancetype:ellipsoidal', # What should this be?
-          'distanceProvenance': obs.setup.point.state, # Reformat?
-          'angleType': obs.arcType, # Reformat?
-          'equipmentUsed': obs.equipmentUsed,
-          'distanceQuality': obs.distanceQuality, # TODO: Thesaurus!
-          'angleQuality': obs.angleQuality,
-          'distanceAccuracy': obs.distanceAccuracy,
-          'angleAccuracy': obs.arcLengthAccuracy
-         }
-    elif isinstance(obs, RedHorizPos):
-      # Fields not echoed: objID, setup
-      return {
-          'hasFeatureOfInterest': obs.setup.point.objID, # FIXME: Parse the association!
-          'resultTime': obs.date,
-          'comment': obs.desc,
-          'projection': obs.horizDatum,
-          'horizontalFix': obs.horizFix,
-          'hasResult': {
-            'coord': [obs.northing, obs.easting]
-          },
-          'distanceType': 'icsmdistancetype:ellipsoidal', # from type
-          'distanceProvenance': obs.setup.point.state, # Reformat?
-          'angleType': obs.arcType, # depending on type, reformat?
-          'order': obs.order,
-          'distanceQuality': obs.distanceQuality, # TODO: Thesaurus!
-          'angleQuality': obs.angleQuality,
-          'distanceAccuracy': obs.distanceAccuracy,
-          'angleAccuracy': obs.angleAccuracy
-         }
-    else:
-      print("Unexpected observation type!", type(obs))
-      return {}
-  
+
   lines = set()
   observedVecs = []
   for i, seg in enumerate(seg for parcel in data.parcels for geom in parcel.geom for seg in geom.segments):
@@ -1081,11 +1020,6 @@ def exportCSDM(data, file):
         # Is this the VectorPurpose value?
         'featureType': 'boundary', # FIXME: This will need to support other feature types. What's the logic here?
         'geometry': {
-          'type': "LineString",
-          'coordinates': simplifyPoly(trans, seg),
-          'properties': {'comment': ""}
-        },
-        'place': {
           'type': "LineString",
           'coordinates': simplifyPoly(Transformer.from_crs(fileproj, fileproj), seg),
           'properties': {'comment': ""}
@@ -1136,10 +1070,6 @@ def exportCSDM(data, file):
         'featureType': "SurveyPoint", # Could be "cadastralMark", etc?
         'time': monument.point.date,
         'geometry': {
-          'type': "Point",
-          'coordinates': list(trans.transform(*monument.point)) if monument.point is not None else []
-        },
-        'place': {
           'type': "Point",
           'coordinates': [monument.point.northing, monument.point.easting] if monument.point is not None else []
         },
@@ -1252,56 +1182,6 @@ def exportRDF(data, file, format="turtle"):
   # Surveyed vectors?
 
   g.serialize(file, format=format)
-
-## Utils
-def derefJSONLinks(root):
-    index = {}
-    def indexJSON(data):
-        if isinstance(data, list):
-            for datum in data: indexJSON(datum)
-        elif isinstance(data, dict):
-            if "id" in data: index["#" + str(data["id"])] = data
-            for datum in data.values(): indexJSON(datum)
-    indexJSON(root)
-
-    def expand(data):
-        if isinstance(data, list):
-            return list(map(expand, data))
-        elif isinstance(data, dict):
-            if "$ref" in data:
-                if data["$ref"] in index:
-                    return index[data["$ref"]]
-                elif data["$ref"][:2] == "#/":
-                    ret = root
-                    for prop in data["$ref"][2:].split("/"):
-                        if prop in ret: ret = ret[prop]
-                        elif isinstance(ret, list):
-                            found = False
-                            for item in ret:
-                                if item.get("id") == prop:
-                                    ret = item
-                                    found = True
-                                    break
-                            if not found:
-                                if prop.isdigit() and int(prop) < len(ret): ret = ret[int(prop)]
-                                else:
-                                    print("Failed to dereference path:",
-                                            data["$ref"])
-                                    return None
-                        else:
-                            print("Failed to dereference path:", data["$ref"])
-                            return None
-                    return ret
-                else:
-                    print("Failed to dereference:", data["$ref"])
-                    return None
-
-            for key, datum in data.items():
-                data[key] = expand(datum)
-            return data
-        else:
-            return data
-    return expand(root)
 
 ## Commandline interface
 
