@@ -471,6 +471,7 @@ class RedHorizPos(Observation): # Spell out "Reduced"
     self.setup.observations.append(self)
     self.line = None
     if self.properties == {}: self.populateProperties()
+    self.purpose = "" # Easier if all 3 have this property...
 
   def populateProperties(self):
     self.properties['hasFeatureOfInterest'] = self.setup.point.objID # FIXME: Parse association!
@@ -1183,6 +1184,57 @@ def exportRDF(data, file, format="turtle"):
 
   g.serialize(file, format=format)
 
+def exportSummary(data):
+  ret = ""
+
+  if data.projection.horizontal == data.projection.vertical:
+    ret += "Projection:\t" + str(data.projection.horizontal) + "\n"
+  else:
+    ret += "Projection:\t" + str(data.projection.horizontal) + ", " + str(data.projection.vertical) + "\n"
+  if data.survey.metadata.name is not None:   ret += "Name:\t" + str(data.survey.metadata.name) + "\n"
+  if data.survey.metadata.firm is not None:   ret += "Firm:\t" + str(data.survey.metadata.firm) + "\n"
+  if data.survey.metadata.surveyor is not None:ret+= "Surveyor:\t" + str(data.survey.metadata.surveyor) + "\n"
+  if data.survey.metadata.type is not None:   ret += "Type:\t" + str(data.survey.metadata.type) + "\n"
+  if data.survey.metadata.jurisdiction is not None:
+    ret += "Jurisdiction:\t" + str(data.survey.metadata.jurisdiction) + "\n"
+  if data.survey.metadata.format is not None: ret += "Format:\t" + str(data.survey.metadata.format) + "\n"
+  if data.survey.metadata.headOfPower is not None:
+    ret += "Head of Power:\t" + str(data.survey.metadata.headOfPower) + "\n"
+  ret += "\n"
+
+  ret += "Monuments:\t" + str(len(data.monuments)) + "\n"
+  for monument in data.monuments or []:
+    ret += "\t" + monument.name + "\t" + str(monument.point) + "\t" + monument.state + "\t" + monument.condition + "\n"
+  ret += "Points:\t" + str(len(data.points)) + "\n"
+  for point in data.points or []:
+    ret += "\t" + str(point.name) + "\t" + str(point.state) + "\t" + str(point) + "\n"
+  ret += "Parcels:\t" + str(len(data.parcels)) + "\n"
+  for parcel in data.parcels or []:
+    ret += "\t" + str(parcel.name) + "\t" + str(parcel.type) + "\t" + str(parcel.area) + "\t" + str(parcel.center) + "\t" + \
+        str(parcel.state) + "\t" + str(parcel.klass) + "\t" + str(parcel.comment) + "\n"
+  ret += "Instruments:\t" + str(len(data.survey.instruments)) + "\n"
+  for instrument in data.survey.instruments or []:
+    ret += "\t" + str(instrument.stationName or instrument.id) + "\t" + str(instrument.height) + "\t" + str(instrument.point) + "\n"
+  ret += "Observations:\t" + str(len([y for x in data.survey.observationGroups.values() for y in x])) + "\n"
+  for label, observations in data.survey.observationGroups.items():
+    ret += "\t\t" + label + "\n"
+    for observation in observations:
+      ret += "\t" + str(observation.name) + "\t" + str(observation.date) + "\t" + str(observation.purpose) + "\t"
+      if isinstance(observation, ReducedObservation):
+        ret += str(observation.setup.stationName or observation.setup.id) + "\t"
+        ret += str(observation.targetSetup.stationName or observation.targetSetup.id) + "\t"
+        ret += str(observation.azimuth) + "\t" + str(observation.horizDist) + "\n"
+      elif isinstance(observation, ReducedArcObservation):
+        ret += str(observation.setup.stationName or observation.setup.id) + "\t"
+        ret += str(observation.targetSetup.stationName or observation.targetSetup.id) + "\t"
+        ret += str(observation.chordAzimuth) + "\t" + str(observation.length) + "\t" + str(observation.radius) + "\n"
+      elif isinstance(observation, RedHorizPos):
+        ret += str(observation.northing) + "," + str(observation.easting) + "\n"
+      else:
+        ret += "Unsupported observation type: " + repr(type(observation)) + "\n"
+
+  return ret
+
 ## Commandline interface
 
 if __name__ == "__main__":
@@ -1199,6 +1251,7 @@ if __name__ == "__main__":
   argparser.add_argument('-r', '--rdf', help="RDF syntax to output", const="ttl", nargs='?')
   argparser.add_argument('-o', '--output', help="RDF file to output to", const="?.rdf", nargs='?')
   argparser.add_argument('-c', '--csdm', help="CSDM JSON output file", const="?.json", nargs='?')
+  argparser.add_argument('-s', '--summary', help="Textual summary of parsed data", const="?.txt", nargs='?')
   args = argparser.parse_args()
 
   wrote_output = False
@@ -1221,6 +1274,8 @@ if __name__ == "__main__":
     if args.csdm:
       with open(args.csdm.replace("?", filename), "w") as f: exportCSDM(data, f)
       wrote_output = True
+    if args.summary:
+      with open(args.summary.replace("?", filename), "w") as f: f.write(exportSummary(data))
 
   read_input = False
   for source in args.LANDXML or []:
