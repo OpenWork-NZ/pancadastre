@@ -1,0 +1,18 @@
+Projection:	epsg:4167
+Name:	DP 572532
+
+Monuments:	3
+	RM E DP 119552	-36.9307359096,174.7501603083	nz-monument-state:original	nz-monument-condition:markfound
+	ALP I DP 481392	-36.9314093194,174.7508196767	nz-monument-state:original	nz-monument-condition:markfound
+	RM C DP 119552 (EQ9W)	-36.930903937,174.749997996	nz-monument-state:original	nz-monument-condition:markfound
+Points:	3
+	None	nz-monument-state:original	-36.9307359096,174.7501603083
+	None	nz-monument-state:original	-36.9314093194,174.7508196767
+	None	nz-monument-state:original	-36.930903937,174.749997996
+Parcels:	0
+Instruments:	2
+	RM E DP 119552	None	-36.9307359096,174.7501603083
+	RM C DP 119552 (EQ9W)	None	-36.930903937,174.749997996
+Observations:	1
+		ov
+	l973158	None	nz-surveypoint-purpose:boundary	RM E DP 119552	RM C DP 119552 (EQ9W)	None	None
