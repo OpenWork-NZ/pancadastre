@@ -1,0 +1,268 @@
+{
+  "@context": {
+    "@base": "https://linked.data.gov.au/def/csdm/csd-example/",
+    "eg1": "https://example.org/csd-example/",
+    "registered-surveyors": "https://example.org/surveyors/",
+    "surveyable": "https://linked.data.gov.au/def/csdm/observedProperties/",
+    "surveyproc": "https://linked.data.gov.au/def/csdm/observationProcedures/",
+    "nz-survey-docroles": "https://linked.data.gov.au/def/csdm/nz-survey-docroles/",
+    "nz-surveypoint-purpose": "https://linked.data.gov.au/def/csdm/nz-surveypointpurpose/",
+    "nz-line-purpose": "https://linked.data.gov.au/def/csdm/nz-linepurpose/",
+    "icsm-survey-type": "https://linked.data.gov.au/def/csdm/icsm-survey-type/",
+    "nz-monument-form": "https://linked.data.gov.au/def/csdm/nz-monument-form/",
+    "nz-monument-condition": "https://linked.data.gov.au/def/csdm/nz-monument-condition/",
+    "nz-monument-state": "https://linked.data.gov.au/def/csdm/nz-monument-state/",
+    "icsm-jurisdictions": "https://linked.data.gov.au/def/jurisdictions/",
+    "epsg": "http://www.opengis.net/def/crs/EPSG/0/"
+  },
+  "id": "NZ-Examples-DP-572532",
+  "name": "DP 572532",
+  "annotations": [
+    {
+      "href": "http://example.com/survey/documentregister/p333-frogsurvey.pdf",
+      "rel": "related",
+      "role": "nz-survey-docroles:fieldbook"
+    }
+  ],
+  "description": "A survey used as a basic example with a few key elements. Note that descriptions typically should not replicate information held in other metadata fields unless there ia a requirement to provide a single description as text with such information.",
+  "appelation": {
+    "label": "DP 572532 1.3",
+    "hasPart": [
+      {
+        "type": "DP",
+        "label": "572532"
+      },
+      {
+        "type": "Version",
+        "label": "1.3"
+      }
+    ]
+  },
+  "type": "FeatureCollection",
+  "featureType": "CSD",
+  "wasGeneratedBy": {
+    "type": "Activity",
+    "id": "DP-1-S2",
+    "endedAtTime": "2029-01-01",
+    "wasAssociatedWith": "registered-surveyors:bc-3",
+    "used": {
+      "type": "Entity",
+      "id": "Act3",
+      "wasAttributedTo": "icsm-jurisdictions:nz",
+      "link": {
+        "href": "https://some.gov/linktoact/",
+        "rel": "related"
+      }
+    }
+  },
+  "purpose": "LT Subdivision",
+  "time": "2022-05-23",
+  "horizontalCRS": "epsg:4167",
+  "bearingRotation": 0.0,
+  "surveyType": "icsm-survey-type:Subdivision",
+  "features": [],
+  "referencedCSDs": [
+    {
+      "name": "DP 119552",
+      "time": "2022-05-23",
+      "bearingRotation": 0.001
+    }
+  ],
+  "points": [
+    {
+      "id": "points",
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "id": "1725787",
+          "type": "Feature",
+          "featureType": "BoundaryMark",
+          "time": null,
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              174.7501603083,
+              -36.9307359096
+            ]
+          },
+          "properties": {
+            "name": {
+              "label": "RM E DP 119552",
+              "hasPart": [
+                {
+                  "type": "Source",
+                  "label": "DP 119552"
+                },
+                {
+                  "type": "Stamp",
+                  "label": "RM E"
+                }
+              ]
+            },
+            "purpose": "nz-surveypoint-purpose:boundary",
+            "fromSurvey": "DP 119552",
+            "comment": "ALP in channel of drive",
+            "occupation": {
+              "comment": "No occupation"
+            },
+            "monumentedBy": {
+              "form": "nz-monument-form:plaque",
+              "condition": "nz-monument-condition:markfound",
+              "state": "nz-monument-state:original"
+            }
+          }
+        },
+        {
+          "id": "44396823",
+          "type": "Feature",
+          "featureType": "CadastralMark",
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              174.7508196767,
+              -36.9314093194
+            ]
+          },
+          "time": null,
+          "properties": {
+            "name": {
+              "label": "ALP I DP 481392",
+              "hasPart": [
+                {
+                  "type": "Source",
+                  "label": "DP 481392"
+                },
+                {
+                  "type": "Stamp",
+                  "label": "ALP I"
+                }
+              ]
+            },
+            "purpose": "nz-surveypoint-purpose:nonBoundary",
+            "occupation": {
+              "comment": "ALP in channel of drive"
+            },
+            "monumentedBy": {
+              "form": "nz-monument-form:pin",
+              "condition": "nz-monument-condition:markfound",
+              "state": "nz-monument-state:original"
+            }
+          }
+        },
+        {
+          "id": "11745104",
+          "type": "Feature",
+          "featureType": "GeodeticMark",
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              174.7499979960,
+              -36.9309039370
+            ]
+          },
+          "time": null,
+          "properties": {
+            "geodeticid": "XX FFF",
+            "name": {
+              "label": "RM C DP 119552 (EQ9W)",
+              "hasPart": [
+                {
+                  "type": "PlanType",
+                  "label": "DP"
+                },
+                {
+                  "type": "Stamp",
+                  "label": "119552"
+                },
+                {
+                  "type": "MarkType",
+                  "label": "RM"
+                },
+                {
+                  "type": "Stamp",
+                  "label": "C"
+                },
+                {
+                  "type": "geodeticStamp",
+                  "label": "EQ9W"
+                }
+              ]
+            },
+            "occupation": {
+              "comment": "ALP in channel of drive"
+            },
+            "purpose": "prm",
+            "monumentedBy": {
+              "form": "nz-monument-form:pin",
+              "condition": "nz-monument-condition:markfound",
+              "state": "nz-monument-state:original"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "observedVectors": [
+    {
+      "id": "ov",
+      "type": "FeatureCollection",
+      "featureType": "surv:ObservedVector",
+      "features": [
+        {
+          "type": "Feature",
+          "id": "l973158",
+          "geometry": null,
+          "topology": {
+            "type": "LineString",
+            "references": [
+              "1725787",
+              "11745104"
+            ]
+          },
+          "properties": {
+            "purpose": "nz-line-purpose:boundary"
+          }
+        }
+      ]
+    }
+  ],
+  "vectorObservations": [
+    {
+      "id": "obs",
+      "type": "FeatureCollection",
+      "featureType": "sosa:ObservationCollection",
+      "time": null,
+      "properties": {
+        "resultTime": "2023-05-24",
+        "observedProperty": "surveyable:VectorDetermination",
+        "usedProcedure": "surveyproc:traverse",
+        "madeBySensor": {
+          "sensorType": "DifferentialGPS",
+          "baseSensor": "gps+38666",
+          "roverSensor": "gps+37544"
+        }
+      },
+      "features": [
+        {
+          "type": "Feature",
+          "geometry": null,
+          "time": null,
+          "place": null,
+          "properties": {
+            "hasFeatureOfInterest": "l973158",
+            "resultTime": "2023-05-22T16:41:00+2",
+            "hasResult": {
+              "pose": {
+                "angles": {
+                  "yaw": 231.38,
+                  "pitch": -0.001
+                },
+                "distance": 333207.1
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

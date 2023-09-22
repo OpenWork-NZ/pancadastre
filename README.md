@@ -1,6 +1,13 @@
 # pancadastre
 Convert between different cadastre fileformats. Can be used as either a Python library or a commandline program.
 
+## Example data
+`example.json` & `example.txt` were generated from `example.json.input` using the command:
+
+		./pancadastre.py -C example.json.input -j -s
+
+`example.json.input` was taken from `../3d-csdm-schema/_sources/csdm/features/CSD/example.json`.
+
 ## Dependencies
 This program requires Python3, PyProj, & RDFLib. PyProj & RDFLib can be installed using: `pip install rdflib pyproj`.
 
