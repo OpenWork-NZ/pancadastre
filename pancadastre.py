@@ -108,8 +108,8 @@ class Point:
   def purpose(self): return self.observation.purpose if self.observation is not None else None
 
   def __iter__(self):
-    yield self.easting
     yield self.northing
+    yield self.easting
 
   def __eq__(self, other):
     return isclose(self.northing, other.northing) and isclose(self.easting, other.easting)
@@ -834,10 +834,11 @@ def interpCurve(a, m, b):
 def exportJSONfg(data, file = None):
   import json
   def simplifyPoly(trans, lines):
+    print(trans)
     if len(lines) == 2:
-      return [list(lines[0].start), list(lines[0].end), list(lines[1].end)]
+      return [list(trans.transform(*lines[0].start)), list(trans.transform(*lines[0].end)), list(trans.transform(*lines[1].end))]
     elif len(lines) == 1:
-      return [list(lines[0].start), list(lines[0].end)]
+      return [list(trans.transform(*lines[0].start)), list(trans.transform(*lines[0].end))]
     elif len(lines) == 0:
       return []
 

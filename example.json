@@ -1,7 +1,7 @@
 {
     "$schema": "schema.json",
     "type": "FeatureCollection",
-    "horizontalCRS": "epsg:4167",
+    "horizontalCRS": "epsg:4326",
     "id": null,
     "name": "DP 572532",
     "purpose": "LT Subdivision",
@@ -15,8 +15,8 @@
             "geometry": {
                 "type": "Point",
                 "coordinates": [
-                    -36.9307359096,
-                    174.7501603083
+                    174.7501603083,
+                    -36.9307359096
                 ]
             },
             "place": {
@@ -60,8 +60,8 @@
             "geometry": {
                 "type": "Point",
                 "coordinates": [
-                    -36.9314093194,
-                    174.7508196767
+                    174.7508196767,
+                    -36.9314093194
                 ]
             },
             "place": {
@@ -103,8 +103,8 @@
             "geometry": {
                 "type": "Point",
                 "coordinates": [
-                    -36.930903937,
-                    174.749997996
+                    174.749997996,
+                    -36.930903937
                 ]
             },
             "place": {
