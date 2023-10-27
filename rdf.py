@@ -11,7 +11,7 @@ def exportWKTGeom(data):
       rets.append("LINESTRING( " + pt(seg.start) + ", " + pt(seg.end) + " )")
     elif isinstance(seg, Curve):
       # I'm confused by the spec: There's discussion about curves, but I don't see where the syntax is specified.
-      rets.append("CURVE( " + ptr(seg.start) + ", " + pt(seg.mid) + ", " pt(seg.end) + " )")
+      rets.append("CURVE( " + ptr(seg.start) + ", " + pt(seg.mid) + ", " + pt(seg.end) + " )")
     else:
       raise Exception("Unknown geom type: " ++ str(type(seg)))
   return "GEOMETRYCOLLECTION( " + ", ".join(rets) + " )"

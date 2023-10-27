@@ -5,6 +5,7 @@ def importLandXML(file):
   # Look at both CRSs, if survey header has different projection apply to places.
   file = ET.parse(file)
 
+  # NOTE: App data has been discarded from intermediate model...
   app = None
   appEl = file.find("{http://www.landxml.org/schema/LandXML-1.2}Application")
   if appEl is not None:
@@ -106,7 +107,15 @@ def importLandXML(file):
   parcelsIndex = {}
   for parcel in i(file.find('{http://www.landxml.org/schema/LandXML-1.2}Parcels')):
     center = parcel.find('{http://www.landxml.org/schema/LandXML-1.2}Center') # CSDM model does not capture this, should we?
-    if not center.get('pntRef'): center = {'pntRef': None}
+    if center is None:
+      centerPt = None # Accept absence
+    elif not center.get('pntRef'):
+      centerPt = pointsIndex.get(center.get('pntRef'))
+    elif center.text.strip() != "":
+      centerPt = Point(None, None, None, *[float(x) for x in center.text.strip().split()])
+    else:
+      centerPt = None
+      print("Could not parse center point!")
 
     geoms = parseGeoms(parcel)
     # titleType is Vic only, want to preserve name.
@@ -128,7 +137,7 @@ def importLandXML(file):
 
     parcel = Parcel(parcel.get('name'), parcel.get('area'), parcel.get('parcelType'),
                     parcel.get('state'), parcel.get('class'), parcel.get('parcelFormat'),
-                    pointsIndex.get(center.get('pntRef')), geoms, titles, address,
+                    centerPt, geoms, titles, address,
                     parcel.get('desc'))
     parcels.append(parcel)
     parcelsIndex[parcel.name] = parcel
@@ -146,10 +155,10 @@ def importLandXML(file):
     surveyMeta = SurveyMetadata(surveyHeaderEl.get('name'), surveyHeaderEl.get('surveyFirm'),
                                 surveyHeaderEl.get('surveyorReference'),
                                 surveyHeaderEl.get('type'), surveyHeaderEl.get('jurisdiction'),
-                                surveyHeaderEl.get('surveyFormat'),
+                                surveyHeaderEl.get('surveyFormat', surveyHeaderEl.get('format')),
                                 # TODO: Capture county, desc, endTime, surveyor, surveyorFirm, surveyorReference, class
                                 # LINZ has it as SurveyPurpose
-                                i(surveyHeaderEl.find('{http://www.landxml.org/schema/LandXML-1.2}PurposeOfSurvey')).get('name'),
+                                i(surveyHeaderEl.find('{http://www.landxml.org/schema/LandXML-1.2}PurposeOfSurvey') or surveyHeaderEl.find('{http://www.landxml.org/schema/LandXML-1.2}SurveyPurpose')).get('name'),
                                 i(surveyHeaderEl.find('{http://www.landxml.org/schema/LandXML-1.2}HeadOfPower')).get('name'),
                                 [AdminArea(l.get('adminAreaType'), l.get('adminAreaName'),
                                           l.get('adminAreaCode'))
@@ -209,12 +218,12 @@ def importLandXML(file):
 
 def exportLandXML(data, file):
   root = ET.Element("{http://www.landxml.org/schema/LandXML-1.2}LandXML") # FIXME: I forgot to capture the attributes on the root element
-  if data.units:
+  for units in data.units:
     unitsL = ET.SubElement(root, "{http://www.landxml.org/schema/LandXML-1.2}Units")
     ET.SubElement(unitsL, "{http://www.landxml.org/schema/LandXML-1.2}Metric", {
-        'areaUnit': data.units.areaUnit, 'linearUnit': data.units.linearUnit, 'volumeUnit': data.units.volumeUnit,
-        'temperatureUnit': data.units.temparatureUnit, 'pressureUnit': data.units.pressureUnit,
-        'angularUnit': data.units.angularUnit, 'directionUnit': data.units.directionUnit
+        'areaUnit': units.areaUnit, 'linearUnit': units.linearUnit, 'volumeUnit': units.volumeUnit,
+        'temperatureUnit': units.temparatureUnit, 'pressureUnit': units.pressureUnit,
+        'angularUnit': units.angularUnit, 'directionUnit': units.directionUnit
     })
   ET.SubElement(root, "{http://www.landxml.org/schema/LandXML-1.2}CoordinateSystem", {
       # NOTE: Inconsistency in how this is denoted, outputting a mixed schema.
@@ -226,7 +235,7 @@ def exportLandXML(data, file):
     # TODO: endTime attribute? surveyorReference? class?
     'name': data.survey.metadata.name, 'surveyPurpose': data.survey.metadata.purpose,
     'surveyor': data.survey.metadata.surveyor, 'surveyorFirm': data.survey.metadata.firm,
-    'type': data.survey.metadata.type, 'format': data.survey.metadata.format,
+    'type': data.survey.metadata.type, 'format': data.survey.metadata.format, 'surveyFormat': data.survey.metadata.format,
     'county': data.survey.metadata.jurisdiction, 'jurisdiction': data.survey.metadata.jurisdiction,
     'surveyorReference': data.survey.metadata.personnel, 'personnel': data.survey.metadata.personnel,
     'hadOfPower': data.survey.metadata.headOfPower,
@@ -242,7 +251,7 @@ def exportLandXML(data, file):
     })
     ET.SubElement(instrumentL, "InstrumentPoint", {'pntRef': instrument.point.objID, 'pointGeometry': 'Point'})
   for name, group in data.observationGroups.items():
-    groupL = ET.SubElement(surveyL, "ObservationGroup", {'id': name}):
+    groupL = ET.SubElement(surveyL, "ObservationGroup", {'id': name})
     for observation in group:
       if isinstance(observation, ReducedObservation):
         obsL = ET.SubElement(groupL, "ReducedObservation", {
@@ -251,7 +260,7 @@ def exportLandXML(data, file):
             'distanceType': observation.distType, 'date': observation.date, 'azimuthAccuracy': observation.angleAccuracy,
             'distanceAccuracy': observation.distanceAccuracy
         })
-        ET.SubElement(obsL, "TargetPoint" {'pntRef': observation.targetPoint.objID, 'pointGeometry': 'point'})
+        ET.SubElement(obsL, "TargetPoint", {'pntRef': observation.targetPoint.objID, 'pointGeometry': 'point'})
       elif isinstance(observation, ReducedArcObservation):
         # FIXME: Find a reference!
         obsL = ET.SubElement(groupL, "ReducedArcObservation", {
@@ -277,32 +286,53 @@ def exportLandXML(data, file):
   for point in data.points:
     ET.SubElement(cgpointsL, "CgPoint", {
         # surveyOrder?
-        'name': point.name, 'pntSurv': point.survey, 'oID': point.objID
+        'name': point.name, 'pntSurv': point.survey, 'state': point.state, 'oID': point.objID
     }).text = str(point.northing) + " " + str(point.easting)
 
-  parcelsL = ET.SubElement(root, "Parcels")
-  for parcel in data.parcels:
-    parcelL = ET.SubElement(parcelsL, "Parcel", {
-        # Store oIDs?
-        'name': parcel.name, 'oID': id(parcel), 'area': parcel.area, 'parcelType': parcel.type, 'class': parcel.klass
-    })
-    ET.SubElement(parcelL, "Center").text = str(parcel.center.northing) + " " str(parcel.center.easting)
-    for geom in parcel.geom:
+  def outputGeom(geoms):
+    for geom in geoms:
       geomL = ET.SubElement(parcelL, "CoordGeom", {'name': geom.name})
       for seg in geom.segments:
         if isinstance(seg, Line):
-          lineL = ET.SubElement(geomL, "Line", {'state': seg.state, 'oID': id(seg)})
+          lineL = ET.SubElement(geomL, "Line", {'state': seg.state, 'oID': seg.id})
           ET.SubElement(lineL, "Start", {'pntRef': seg.start.objID, 'pointGeometry': 'point'})
           ET.SubElement(lineL, "End", {'pntRef': seg.end.objID, 'pointGeometry': 'point'})
         elif isinstance(seg, Curve):
           # Is this right?
-          curveL = ET.SubElement(geomL, "Curve", {'state': seg.state, 'oID': id(seg),
+          curveL = ET.SubElement(geomL, "Curve", {'state': seg.state, 'oID': seg.id,
               'rot': 'cw' if seg.is_clockwise else 'ccw', 'radius': seg.radius})
           ET.SubElement(curveL, "Start", {'pntRef': seg.start.objID, 'pointGeometry': 'point'})
           ET.SubElement(curveL, "Mid", {'pntRef': seg.mid.objID, 'pointGeometry': 'point'})
           ET.SubElement(curveL, "End", {'pntRef': seg.end.objID, 'pointGeometry': 'point'})
         else:
           raise Exception("Unsupported geometry-segment type! " + str(type(seg)))
-    ET.SubElement(parcelL, "Title", {'name': parcel.titleDoc})
+
+  parcelsL = ET.SubElement(root, "Parcels")
+  for parcel in data.parcels:
+    parcelL = ET.SubElement(parcelsL, "Parcel", {
+        # Store oIDs?
+        'name': parcel.name, 'oID': id(parcel), 'area': parcel.area, 'parcelType': parcel.type, 'class': parcel.klass, 'state': parcel.state, 'parcelFormat': parcel.format, 'desc': parcel.desc
+    })
+    ET.SubElement(parcelL, "Center").text = str(parcel.center.northing) + " " + str(parcel.center.easting)
+    outputGeom(parcel.geom)
+    if isinstance(parcel.titleDoc, dict):
+      for titleName, titleType in parcel.titleDoc.items():
+        ET.SubElement(parcelL, "Title", {'name': titleName, 'titleType': titleType})
+    else:
+      ET.SubElement(parcelL, "Title", {'name': titleName})
+
+    if parcel.address is not None:
+      addressL = ET.SubElement(parcelL, 'LocationAddress', {'addressType': parcel.address.type, 'numberFirst': parcel.address.num})
+      ET.SubElement(addressL, 'RoadName', {'roadNameType': parcel.address.roadNameType, 'roadName': parcel.address.roadName, 'roadType': parcel.address.roadType})
+      adminArea = parcel.address.adminArea
+      if adminArea is not None:
+        ET.SubElement(addressL, 'AdministrativeArea', {'adminAreaType': adminArea.type, 'adminAreaName': adminArea.name, 'adminAreaCode': adminArea.code})
+
+  for name, features in data.features.items():
+    featuresL = ET.SubElement(root, 'PlanFeatures')
+    for feature in features:
+      # Is this element name correct?
+      ET.SubElement(featuresL, 'PlanFeature', {'name': feature.name, 'desc': feature.desc})
+      outputGeom(feature.geom)
 
   root.write(file)
