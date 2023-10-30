@@ -28,12 +28,18 @@ def importCSDM(file):
   pointsIndex = {}
   for collection in data["points"]:
     for monument in collection["features"]:
-      point = Point(None, None, monument["properties"]["monumentedBy"]["state"], monument["geometry"]["coordinates"][0], monument["geometry"]["coordinates"][1], monument["id"])
+      monumentedBy = monument["properties"]["monumentedBy"]
+      if "state" not in monumentedBy or "form" not in monumentedBy or "condition" not in monumentedBy:
+        if "monumentState" in monumentedBy:
+          print("Outdated schema! Key 'monumentState' should be 'state'!")
+        else:
+          print("Invalid schema! Not attaching monument info!")
+      point = Point(None, None, monumentedBy.get("state", monumentedBy.get("monumentState")), monument["geometry"]["coordinates"][0], monument["geometry"]["coordinates"][1], monument["id"])
       points.append(point)
       pointsIndex[monument["id"]] = deepcopy(monument)
       pointsIndex[monument["id"]][""] = point
       # The observations will be initialized later
-      monuments.append(Monument(monument["properties"]["name"]["label"], point, monument["properties"]["monumentedBy"]["state"], monument["properties"]["monumentedBy"]["form"], monument["properties"]["monumentedBy"]["condition"], properties = monument["properties"]))
+      monuments.append(Monument(monument["properties"]["name"]["label"], point, monumentedBy.get("state", monumentedBy.get("monumentState")), monumentedBy.get("form", monumentedBy.get("monumentForm")), monumentedBy.get("condition", monumentedBy.get("monumentCondition")), properties = monument["properties"]))
 
   def n(comment): return None # Indicates a TODO...
   def d(x):

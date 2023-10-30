@@ -158,7 +158,7 @@ def importLandXML(file):
                                 surveyHeaderEl.get('surveyFormat', surveyHeaderEl.get('format')),
                                 # TODO: Capture county, desc, endTime, surveyor, surveyorFirm, surveyorReference, class
                                 # LINZ has it as SurveyPurpose
-                                i(surveyHeaderEl.find('{http://www.landxml.org/schema/LandXML-1.2}PurposeOfSurvey') or surveyHeaderEl.find('{http://www.landxml.org/schema/LandXML-1.2}SurveyPurpose')).get('name'),
+                                i(surveyHeaderEl.find('{http://www.landxml.org/schema/LandXML-1.2}PurposeOfSurvey') or surveyHeaderEl.find('{http://www.landxml.org/schema/LandXML-1.2}SurveyPurpose')).get('name', surveyHeaderL.get('surveyPurpose')),
                                 i(surveyHeaderEl.find('{http://www.landxml.org/schema/LandXML-1.2}HeadOfPower')).get('name'),
                                 [AdminArea(l.get('adminAreaType'), l.get('adminAreaName'),
                                           l.get('adminAreaCode'))
@@ -239,7 +239,17 @@ def exportLandXML(data, file):
     'county': data.survey.metadata.jurisdiction, 'jurisdiction': data.survey.metadata.jurisdiction,
     'surveyorReference': data.survey.metadata.personnel, 'personnel': data.survey.metadata.personnel,
     'hadOfPower': data.survey.metadata.headOfPower,
-  }) # Child nodes?
+  }) # FIXME: Child nodes?
+  ET.SubElement(surveyHeaderL, 'PurposeOfSurvey', {'name': data.survey.metadata.purpose})
+  ET.SubElement(surveyHeaderL, 'SurveyPurpose', {'name': data.survey.metadata.purpose})
+  ET.SubElement(surveyHeaderL, 'HeadOfPower', {'name': data.survey.metadata.headOfPower})
+  for adminArea in data.survey.metadata.adminAreas:
+    ET.SubElement(surveyHeaderL, 'AdministrativeArea', {'adminAreaType': adminArea.type, 'adminAreaName': adminArea.name, 'adminAreaCode': adminArea.code})
+  for personnel in data.survey.metadata.personnel:
+    ET.SubElement(surveyHeaderL, 'Personnel', {'name': personnel.name, 'role': personnel.role, 'regType': personnel.registerType, 'regNumber': personnel.registerID})
+  for annotation in data.survey.metadata.annotations:
+    ET.SubElement(surveyHeaderL, 'Annotation', {'type': annotation.type, 'name': annotation.name, 'desc': annotation.desc, 'pclRef': annotation.parcel.name})
+
   for monument in data.survey.monuments:
     ET.SubElement(surveyL, "Monument", {
         # I haven't captured monument IDs!
