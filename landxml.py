@@ -253,7 +253,7 @@ def exportLandXML(data, file):
   for monument in data.survey.monuments:
     ET.SubElement(surveyL, "Monument", {
         # I haven't captured monument IDs!
-        'mntRef': id(monument), 'purpose': monument.type, 'state': monument.state
+        'mntRef': id(monument), 'purpose': monument.type, 'state': monument.state, 'name': monument.name, 'pntRef': monument.point.objID, 'type': monument.type, 'condition': monument.condition
     })
   for instrument in data.survey.instruments:
     instrumentL = ET.SubElement(surveyL, "InstrumentSetup", {
@@ -266,14 +266,15 @@ def exportLandXML(data, file):
       if isinstance(observation, ReducedObservation):
         obsL = ET.SubElement(groupL, "ReducedObservation", {
             'setupID': observation.setup.id, 'azimuth': observation.azimuth, 'horizDistance': observation.horizDist,
+            'targetSetupId': observation.targetSetup.id, 'horizDistance': observation.horizDist,
             'equipmentUsed': observation.equipment, 'azimuthType': observation.azimuthType,
             'distanceType': observation.distType, 'date': observation.date, 'azimuthAccuracy': observation.angleAccuracy,
-            'distanceAccuracy': observation.distanceAccuracy
+            'distanceAccuracy': observation.distanceAccuracy, 'purpose': observation.purpose, 'name': observation.name
         })
         ET.SubElement(obsL, "TargetPoint", {'pntRef': observation.targetPoint.objID, 'pointGeometry': 'point'})
       elif isinstance(observation, ReducedArcObservation):
         # FIXME: Find a reference!
-        obsL = ET.SubElement(groupL, "ReducedArcObservation", {
+        ET.SubElement(groupL, "ReducedArcObservation", {
             'purpose': observation.purpose, 'setupID': observation.setup.id, 'targetSetupID': observation.targetSetup.id,
             'chordAzimuth': observation.chordAzimuth, 'radius': observation.radius, 'length': observation.length,
             'rot': "cw" if observation.is_clockwise else "ccw", 'equipmentUsed': observation.equipmentUsed,
@@ -281,7 +282,8 @@ def exportLandXML(data, file):
             'name': observation.name, 'date': observation.date
         })
       elif isinstance(observation, RedHorizPos):
-        ... # Most LandXML variants don't use this.
+        # FIXME: Find a reference!
+        ET.SubElement(groupL, "RedHorizontalPosition", {'desc': observation.desc, 'name': observation.name, 'oID': observation.objID, 'setupID': observation.setup.id, 'date': observation.date, 'horizontalDatum': observation.horizDatum, 'latitude': observation.northing, 'longitude': observation.longitude, 'horizontalFix': observation.horizFix, 'order': observation.order})
       else:
         raise Exception("Unsupported observation type! " + str(type(observation)))
 

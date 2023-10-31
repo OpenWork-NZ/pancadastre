@@ -34,12 +34,13 @@ class Unit:
     self.directionUnit = directionUnit
 
 class Monument:
-  def __init__(self, name, point, state, type, condition, properties = None):
+  def __init__(self, name, point, state, type, condition, properties = None, oid = None):
     self.name = name
     self.point = point
     self.state = state
     self.type = type
     self.condition = condition
+    self.oid = oid
     self.properties_ = properties
     self.point.monuments.append(self)
     # Modelling remonumenting?
