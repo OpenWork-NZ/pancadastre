@@ -110,6 +110,7 @@ if __name__ == "__main__":
       with open(args.summary.replace("?", filename), "w") as f: f.write(exportSummary(data))
 
   def redirect_errors(infile):
+    import sys
     from os import path
     filename = path.splitext(path.basename(infile))[0]
 
