@@ -83,6 +83,7 @@ if __name__ == "__main__":
   argparser.add_argument('-o', '--output', help="RDF file to output to", const="?.rdf", nargs='?')
   argparser.add_argument('-c', '--csdm', help="CSDM JSON output file", const="?.json", nargs='?')
   argparser.add_argument('-s', '--summary', help="Textual summary of parsed data", const="?.txt", nargs='?')
+  argparser.add_argument('-e', '--errorlog', help="Log of any encountered errors", const="?.log", nargs='?')
   args = argparser.parse_args()
 
   wrote_output = False
@@ -108,12 +109,32 @@ if __name__ == "__main__":
     if args.summary:
       with open(args.summary.replace("?", filename), "w") as f: f.write(exportSummary(data))
 
+  def redirect_errors(infile):
+    from os import path
+    filename = path.splitext(path.basename(infile))[0]
+
+    if args.errorlog:
+      sys.stdout = open(args.errorlog.replace("?", filename), "w")
+      print(infile)
+
   read_input = False
   for source in args.LANDXML or []:
-    with open(source) as f: export(source, importLandXML(f))
+    redirect_errors(source)
+    try:
+      with open(source) as f: export(source, importLandXML(f))
+    except KeyError as err:
+      print("Unresolvable link!", err)
+    except Exception as err:
+      print(err)
     read_input = True
   for source in args.CSDM or []:
-    with open(source) as f: export(source, importCSDM(f))
+    redirect_errors(source)
+    try:
+      with open(source) as f: export(source, importCSDM(f))
+    except KeyError as err:
+      print("Unresolvable link or missing property!", err)
+    except Exception as err:
+      print(err)
     read_input = True
 
   if not read_input:

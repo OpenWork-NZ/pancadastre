@@ -28,8 +28,11 @@ def importCSDM(file):
   pointsIndex = {}
   for collection in data["points"]:
     for monument in collection["features"]:
-      monumentedBy = monument["properties"]["monumentedBy"]
-      if "state" not in monumentedBy or "form" not in monumentedBy or "condition" not in monumentedBy:
+      monumentedBy = monument["properties"].get("monumentedBy")
+      if monumentedBy is None:
+        print("'monumentedBy' property is mandatory!", monument["id"], monument["properties"])
+        monumentedBy = {}
+      elif "state" not in monumentedBy or "form" not in monumentedBy or "condition" not in monumentedBy:
         if "monumentState" in monumentedBy:
           print("Outdated schema! Key 'monumentState' should be 'state'!")
         else:
