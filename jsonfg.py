@@ -1,4 +1,5 @@
 from data import *
+from pyproj import Transformer, Geod
 
 # TODO: Tweak according to surveyfeatures.json, circular_arc.json
 def exportJSONfg(data, file = None):

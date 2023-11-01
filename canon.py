@@ -34,12 +34,12 @@ def importCSDM(file):
           print("Outdated schema! Key 'monumentState' should be 'state'!")
         else:
           print("Invalid schema! Not attaching monument info!")
-      point = Point(None, None, monumentedBy.get("state", monumentedBy.get("monumentState")), monument["geometry"]["coordinates"][0], monument["geometry"]["coordinates"][1], monument["id"])
+      point = Point(None, None, monumentedBy.get("state", monumentedBy.get("monumentState")), monument["place"]["coordinates"][0], monument["place"]["coordinates"][1], monument["id"])
       points.append(point)
       pointsIndex[monument["id"]] = deepcopy(monument)
       pointsIndex[monument["id"]][""] = point
       # The observations will be initialized later
-      monuments.append(Monument(monument["properties"]["name"]["label"], point, monumentedBy.get("state", monumentedBy.get("monumentState")), monumentedBy.get("form", monumentedBy.get("monumentForm")), monumentedBy.get("condition", monumentedBy.get("monumentCondition")), properties = monument["properties"]))
+      monuments.append(Monument((monument["properties"].get("name") or {}).get("label", monument["id"]), point, monumentedBy.get("state", monumentedBy.get("monumentState")), monumentedBy.get("form", monumentedBy.get("monumentForm")), monumentedBy.get("condition", monumentedBy.get("monumentCondition")), properties = monument["properties"]))
 
   def n(comment): return None # Indicates a TODO...
   def d(x):
@@ -146,7 +146,7 @@ def exportCSDM(data, file):
         'type': "Feature",
         # Is this the VectorPurpose value?
         'featureType': 'boundary', # FIXME: This will need to support other feature types. What's the logic here?
-        'geometry': {
+        'place': {
           'type': "LineString",
           'coordinates': simplifyPoly(Transformer.from_crs(fileproj, fileproj), seg),
           'properties': {'comment': ""}
@@ -164,7 +164,7 @@ def exportCSDM(data, file):
           'type': "Feature",
           # Is this the VectorPurpose value?
           'featureType': 'boundary', # FIXME: This will need to support other feature types. What's the logic here?
-          'geometry': None,
+          'place': None,
           'topology': {
             'type': "LineString",
             'references': [ref(seg.start.objID), ref(seg.end.objID)], # TODO: Not all of these IDs would be dereferencable, find them!
@@ -196,7 +196,7 @@ def exportCSDM(data, file):
         'type': "Feature",
         'featureType': "SurveyPoint", # Could be "cadastralMark", etc?
         'time': monument.point.date,
-        'geometry': {
+        'place': {
           'type': "Point",
           'coordinates': [monument.point.northing, monument.point.easting] if monument.point is not None else []
         },
@@ -212,7 +212,7 @@ def exportCSDM(data, file):
       'features': [{
         'id': geom.name or j,
         'type': 'Feature',
-        'geometry': None,
+        'place': None,
         'topology': {
           'type': 'Polygon',
           'references': [ref(seg.id) for seg in geom.segments]
@@ -235,7 +235,7 @@ def exportCSDM(data, file):
       'features': [{
         'id': obs.name or (groupName + str(i)),
         'type': "Feature",
-        'geometry': None,
+        'place': None,
         'properties': obs.properties
       } for i, obs in enumerate(group)]
     } for groupName, group in data.survey.observationGroups.items()],
