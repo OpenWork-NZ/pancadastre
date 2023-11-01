@@ -103,10 +103,10 @@ class Point:
     return isclose(self.northing, other.northing) and isclose(self.easting, other.easting)
 
   def __str__(self):
-    return str(self.easting) + "," + str(self.northing)
+    return str(self.northing) + "," + str(self.easting)
 
   def __repr__(self):
-    return repr(self.easting) + "," + repr(self.northing)
+    return repr(self.northing) + "," + repr(self.easting)
 
   def __add__(self, other):
     return Point(self.survey, self.name, self.state, self.northing + other.northing, self.easting + other.easting, str(self.objID) + "+" + str(other.objID))

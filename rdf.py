@@ -1,5 +1,6 @@
 import rdflib
 from rdflib.namespace import RDFS, RDF, GEO
+from data import *
 
 def exportWKTGeom(data):
   def pt(point):

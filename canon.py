@@ -58,7 +58,7 @@ def importCSDM(file):
           start = pointsIndex[d(observation["topology"]["references"][i-1])]
           end = pointsIndex[d(observation["topology"]["references"][i])]
           # Distance comes from vector observations, we might want to split that class out!
-          obs = ReducedObservation(None, instrument(start["id"], start["properties"]["name"]["label"], None, start[""]), instrument(end["id"], end["properties"]["name"]["label"], None, end[""]), measure.azimuth, measure.dist, measure.equipment, measure.distType, measure.azimuthType, observation["id"], start["time"], start["properties"], measure = measure)
+          obs = ReducedObservation(None, instrument(start["id"], (start["properties"].get("name") or {}).get("label", start["id"]), None, start[""]), instrument(end["id"], (end["properties"].get("name") or {}).get("label", end["id"]), None, end[""]), measure.azimuth, measure.dist, measure.equipment, measure.distType, measure.azimuthType, observation["id"], start["time"], start["properties"], measure = measure)
           observations.append(obs)
 
           geom = Line(observation["id"], start[""], end[""])
@@ -68,7 +68,7 @@ def importCSDM(file):
         mid = pointsIndex[d(observation["topology"]["references"][1])]
         end = pointsIndex[d(observation["topology"]["references"][2])]
         # Distance, radius, etc comes from vector observations.
-        obs = ReducedArcObservation(None, instrument(start["id"], start["properties"]["name"]["label"], None, start[""]), instrument(end["id"], end["properties"]["name"]["label"], None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start["time"], start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
+        obs = ReducedArcObservation(None, instrument(start["id"], (start["properties"].get("name") or {}).get("label", start["id"]), None, start[""]), instrument(end["id"], (end["properties"].get("name") or {}).get("label", end["id"]), None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start["time"], start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
         observations.append(obs)
 
         geom = Curve(observation["id"], measure.is_clockwise, measure.radius, start[""], mid[""], end[""])

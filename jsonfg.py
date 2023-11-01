@@ -46,7 +46,7 @@ def exportJSONfg(data, file = None):
     }
   fileproj = data.projection.horizontal
   if fileproj[:5] == "epsg:": fileproj = fileproj[5:]
-  trans = Transformer.from_crs(fileproj, 'wgs84')
+  trans = Transformer.from_crs(fileproj, 'wgs84', always_xy = True)
   
   lines = set()
   observedVecs = []
@@ -92,7 +92,7 @@ def exportJSONfg(data, file = None):
         }
       }
     observedVecs.append(x)
-  
+ 
   ret = {
     '$schema': 'schema.json',
     'type': 'FeatureCollection',
@@ -125,13 +125,26 @@ def exportJSONfg(data, file = None):
         'place': exportGeom(parcel, 'wgs84'),
         'geometry': exportGeom(parcel, fileproj),
         'properties': parcel.properties
-      } for i, parcel in enumerate(data.parcels)]# + [{
-#      'type': "Feature",
-#      'featureType': "sosa:ObservationCollection",
-#      'properties': {
-#        'usedProcedure': "icsm:XXX"
-#      } # FIXME: This seems incomplete...
-#    } for groupID, group in data.survey.observationGroups.items() for i, observation in enumerate(group)]
+      } for i, parcel in enumerate(data.parcels)] + [{
+      'type': "Feature",
+      'featureType': "sosa:ObservationCollection",
+      'geometry': {
+        'type': "LineString",
+        'featureType': 'observation',
+        'coordinates': [trans.transform(*observation.setupPoint), trans.transform(*observation.targetPoint)],
+        'properties': {
+          # What should go in here?
+        }
+      },
+      'place': {
+        'type': "LineString",
+        'featureType': 'observation',
+        'coordinates': [list(observation.setupPoint), list(observation.targetPoint)],
+        'properties': {
+          # What should go in here?
+        }
+      }
+    } for groupID, group in data.survey.observationGroups.items() for i, observation in enumerate(group)]
   }
   if file is not None: json.dump(ret, file, indent=4)
   else: return ret
