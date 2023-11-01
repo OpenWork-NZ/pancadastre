@@ -420,6 +420,12 @@ class ReducedArcObservation(Observation):
     self.measure = measure
 
   @property
+  def setupPoint(self): return self.setup.point
+
+  @property
+  def targetPoint(self): return self.targetSetup.point
+
+  @property
   def line(self):
     for segment in self.setupPoint.segments:
       if self.setupPoint == segment.start and self.targetPoint == segment.end: return segment
