@@ -1,9 +1,9 @@
 from data import *
 from pyproj import Transformer
+import json
 
 # TODO: Tweak according to surveyfeatures.json, circular_arc.json
 def exportJSONfg(data, file = None):
-  import json
   def simplifyPoly(trans, lines):
     if len(lines) == 2:
       return [list(trans.transform(*lines[0].start)), list(trans.transform(*lines[0].end)), list(trans.transform(*lines[1].end))]
@@ -165,3 +165,10 @@ def exportJSONfg(data, file = None):
   }
   if file is not None: json.dump(ret, file, indent=4)
   else: return ret
+
+def exportGeoJSON(data, file):
+  data = exportJSONfg(data)
+  del data["horizontalCRS"]
+  for datum in data["features"]:
+    del datum["place"]
+  json.dump(data, file, indent=4)

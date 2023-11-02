@@ -106,6 +106,7 @@ if __name__ == "__main__":
   argparser.add_argument('-o', '--output', help="RDF file to output to", const="?.rdf", nargs='?')
   argparser.add_argument('-c', '--csdm', help="CSDM JSON output file", const="?.json", nargs='?')
   argparser.add_argument('-s', '--summary', help="Textual summary of parsed data", const="?.txt", nargs='?')
+  argparser.add_argument('-g', '--geojson', help="GeoJSON output file", const="?.json", nargs='?')
   argparser.add_argument('-e', '--errorlog', help="Log of any encountered errors", const="?.log", nargs='?')
   args = argparser.parse_args()
 
@@ -121,6 +122,10 @@ if __name__ == "__main__":
 
     if args.jsonfg:
       with open(args.jsonfg.replace("?", filename), "w") as f: exportJSONfg(data, f)
+      wrote_output = True
+    if args.geojson:
+      with open(args.geojson.replace("?", filename), "w") as f:
+        exportGeoJSON(data, f)
       wrote_output = True
     if args.output or args.rdf:
       with open((args.output or "?.rdf").replace("?", filename), "w") as f:
