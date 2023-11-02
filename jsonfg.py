@@ -159,8 +159,8 @@ def exportJSONfg(data, file = None):
       } for i, parcel in enumerate(data.parcels)] + [{
         'type': "Feature",
         'featureType': "sosa:ObservationCollection",
-        'geometry': exportObs(observation, fileproj),
-        'place': exportObs(observation, 'wgs84')
+        'geometry': exportObs(observation, 'wgs84'),
+        'place': exportObs(observation, fileproj)
       } for groupID, group in data.survey.observationGroups.items() for i, observation in enumerate(group)]
   }
   if file is not None: json.dump(ret, file, indent=4)
