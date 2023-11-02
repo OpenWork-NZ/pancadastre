@@ -76,6 +76,8 @@ def importCSDM(file):
 
         geom = Curve(observation["id"], measure.is_clockwise, measure.radius, start[""], mid[""], end[""])
         segments[observation["id"]] = geom
+        obs.geom = geom
+        obs.mid = mid
       elif observation["topology"]["type"].lower() == "arcwithcenter":
         # FIXME: center isn't mid?
         start = pointsIndex[d(observation["topology"]["references"][0])]
@@ -84,8 +86,10 @@ def importCSDM(file):
         obs = ReducedArcObservation(None, instrument(start["id"], (start["properties"].get("name") or {}).get("label", start["id"]), None, start[""]), instrument(end["id"], (end["properties"].get("name") or {}).get("label", end["id"]), None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start["time"], start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
         observations.append(obs)
 
-        geom = Curve(observation["id"], measure.is_clockwise, measure.radius, start[""], mid[""], end[""])
+        geom = Curve.from_center(observation["id"], measure.is_clockwise, measure.radius, start[""], mid[""], end[""])
         segments[observation["id"]] = geom
+        obs.geom = geom
+        obs.center = mid
       else:
         print("Unexpected observedVector topology-type: ", observation["topology"]["type"])
     observationGroups[group["id"]] = observations

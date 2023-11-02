@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 from pyproj import Transformer, Geod
 
-from math import pi, isclose, ceil, sqrt
+from math import pi, isclose, ceil, sqrt, isnan
 tau = 2*pi
 
 from data import *
@@ -24,8 +24,6 @@ class IDList(list):
   def __init__(self):
     self.id = ""
 def interpCurves(data, delta):
-  geod = Geod(ellps='WGS84')
-  trans = Transformer.from_crs(data.projection.horizontal, 'wgs84')
   def inner(subdata):
     for geom in subdata.geom:
       segments = []
@@ -35,9 +33,10 @@ def interpCurves(data, delta):
           continue
         interp = interpCurve(segment.start, segment.mid, segment.end)
 
-        long0, lat0 = trans.transform(*segment.start)
-        long1, lat1 = trans.transform(*segment.end)
-        _a, _b, dist = geod.inv(long0, lat0, long1, lat1)
+        east0, north0 = segment.start
+        east1, north1 = segment.end
+        eastd, northd = east0 - east1, north0 - north1
+        dist = sqrt(eastd*eastd + northd*northd)
         subdivisions = ceil(dist/delta)
 
         subsegs = IDList()
@@ -52,8 +51,32 @@ def interpCurves(data, delta):
 
   for parcel in data.parcels: inner(parcel)
   for feature in data.features: inner(feature)
+  for observations in data.survey.observationGroups.values():
+    for observation in observations:
+      if isinstance(observation, ReducedArcObservation):
+        segment = observation.geom
+        interp = interpCurve(segment.start, segment.mid, segment.end)
+        east0, north0 = segment.start
+        east1, north1 = segment.end
+        eastd, northd = east0 - east1, north0 - north1
+        dist = sqrt(eastd*eastd + northd*northd)
+        if isnan(dist):
+          print("WARNING: Failed to compute distance between the 2 points!",
+              (east0, north0), (east1, north1))
+          dist = 1
+        subdivisions = ceil(dist/delta)
+
+        subsegs = IDList()
+        prev = interp(0)
+        for t in range(subdivisions):
+          end = interp((t+1)/subdivisions)
+          subsegs.append(Line(t, Point(None, None, None, prev[1], prev[0]),
+              Point(None, None, None, end[1], end[0])))
+        subsegs.id = segment.id
+        observation.geom = subsegs
 
 def interpCurve(a, m, b):
+  # See https://observablehq.com/@jrus/circle-arc-interpolation
   b_m = b.easting - m.easting, b.northing - m.northing
   m_a = m.easting - a.easting, m.northing - a.northing
   ab_m = a.easting*b_m[0] - a.northing*b_m[1], a.easting*b_m[1] + a.northing*b_m[0]

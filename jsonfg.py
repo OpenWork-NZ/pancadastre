@@ -1,11 +1,10 @@
 from data import *
-from pyproj import Transformer, Geod
+from pyproj import Transformer
 
 # TODO: Tweak according to surveyfeatures.json, circular_arc.json
 def exportJSONfg(data, file = None):
   import json
   def simplifyPoly(trans, lines):
-    print(trans)
     if len(lines) == 2:
       return [list(trans.transform(*lines[0].start)), list(trans.transform(*lines[0].end)), list(trans.transform(*lines[1].end))]
     elif len(lines) == 1:
@@ -44,6 +43,38 @@ def exportJSONfg(data, file = None):
       'type': 'Polygon',
       'coordinates': [simplifyPoly(trans, Geom.flatten(geom.segments)) for geom in parcel.geom]
     }
+  def exportObs(obs, proj):
+    trans = Transformer.from_crs(fileproj, proj)
+    if isinstance(obs, ReducedObservation) or (
+        isinstance(obs, ReducedArcObservation) and obs.geom is None):
+      return {
+          'type': "LineString",
+          'featureType': 'observation',
+          'coordinates': [trans.transform(*obs.setupPoint), trans.transform(*obs.targetPoint)],
+          'properties': {
+            # What should go in here?
+          }
+        }
+    elif isinstance(obs, ReducedArcObservation) and obs.geom is not None:
+      return {
+        'type': "LineString",
+        'featureType': 'observation',
+        'coordinates': simplifyPoly(trans, Geom.flatten([obs.geom])),
+        'properties': {
+          # What should go in here?
+        }
+      }
+    elif isinstance(obs, RedHorizPos):
+      return {
+        'type': "Point",
+        'featureType': 'observation',
+        'coordinates': list(trans.transform(obs.northing, obs.easting)),
+        'properties': {
+          # What should go in here?
+        }
+      }
+    else:
+      print("Unexpected observation type!", type(obs))
   fileproj = data.projection.horizontal
   if fileproj[:5] == "epsg:": fileproj = fileproj[5:]
   trans = Transformer.from_crs(fileproj, 'wgs84', always_xy = True)
@@ -126,25 +157,11 @@ def exportJSONfg(data, file = None):
         'geometry': exportGeom(parcel, fileproj),
         'properties': parcel.properties
       } for i, parcel in enumerate(data.parcels)] + [{
-      'type': "Feature",
-      'featureType': "sosa:ObservationCollection",
-      'geometry': {
-        'type': "LineString",
-        'featureType': 'observation',
-        'coordinates': [trans.transform(*observation.setupPoint), trans.transform(*observation.targetPoint)],
-        'properties': {
-          # What should go in here?
-        }
-      },
-      'place': {
-        'type': "LineString",
-        'featureType': 'observation',
-        'coordinates': [list(observation.setupPoint), list(observation.targetPoint)],
-        'properties': {
-          # What should go in here?
-        }
-      }
-    } for groupID, group in data.survey.observationGroups.items() for i, observation in enumerate(group)]
+        'type': "Feature",
+        'featureType': "sosa:ObservationCollection",
+        'geometry': exportObs(observation, fileproj),
+        'place': exportObs(observation, 'wgs84')
+      } for groupID, group in data.survey.observationGroups.items() for i, observation in enumerate(group)]
   }
   if file is not None: json.dump(ret, file, indent=4)
   else: return ret

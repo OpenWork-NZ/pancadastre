@@ -1,4 +1,5 @@
 from datetime import datetime
+from math import isclose, sqrt
 
 class Cadastre:
   def __init__(self, projection, features, units, monuments, points, parcels, survey, boundaries = []):
@@ -215,10 +216,12 @@ class Curve(Segment):
 
   @staticmethod
   def from_center(id, is_clockwise, r, start, center, end, state = None):
-    # Do we need to consider is_clockwise in this formula?
-    if isclose(r, 0):
+    # Handle missing inputs
+    if is_clockwise is None: is_clockwise = True # Better default?
+    if r is None or isclose(r, 0):
       dist = center - start
       r = sqrt(dist.northing*dist.northing + dist.easting*dist.easting)
+
     a, b = (start, end) if is_clockwise else (end, start)
     ab = b - a
     lab = sqrt(ab.easting*ab.easting + ab.northing*ab.northing)
@@ -418,6 +421,9 @@ class ReducedArcObservation(Observation):
       self.targetSetup.observations.append(self)
     if self.properties == {}: self.populateProperties()
     self.measure = measure
+    self.geom = None # For the CSDM schema
+    self.center = None
+    self.mid = None
 
   @property
   def setupPoint(self): return self.setup.point
