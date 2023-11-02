@@ -38,13 +38,13 @@ def exportJSONfg(data, file = None):
     return list(map(list, points))
 
   def exportGeom(parcel, proj):
-    trans = Transformer.from_crs(fileproj, proj)
+    trans = Transformer.from_crs(fileproj, proj, always_xy = proj.lower() == 'wgs84')
     return {
       'type': 'Polygon',
       'coordinates': [simplifyPoly(trans, Geom.flatten(geom.segments)) for geom in parcel.geom]
     }
   def exportObs(obs, proj):
-    trans = Transformer.from_crs(fileproj, proj)
+    trans = Transformer.from_crs(fileproj, proj, always_xy = proj.lower() == 'wgs84')
     if isinstance(obs, ReducedObservation) or (
         isinstance(obs, ReducedArcObservation) and obs.geom is None):
       return {
