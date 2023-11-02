@@ -153,8 +153,8 @@ def exportJSONfg(data, file = None):
         'featureType': 'boundary',
         'links': [],
         'time': '', # Appears to be missing from LandXML
-        'place': exportGeom(parcel, 'wgs84'),
-        'geometry': exportGeom(parcel, fileproj),
+        'geometry': exportGeom(parcel, 'wgs84'),
+        'place': exportGeom(parcel, fileproj),
         'properties': parcel.properties
       } for i, parcel in enumerate(data.parcels)] + [{
         'type': "Feature",
