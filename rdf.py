@@ -117,14 +117,14 @@ def exportSummary(data):
 
   ret += "Monuments:\t" + str(len(data.monuments)) + "\n"
   for monument in data.monuments or []:
-    ret += "\t" + monument.name + "\t" + str(monument.point) + "\t" + monument.state + "\t" + monument.condition + "\n"
+    ret += "\t" + str(monument.name) + "\t" + str(monument.point) + "\t" + str(monument.state) + "\t" + str(monument.condition) + "\n"
   ret += "Points:\t" + str(len(data.points)) + "\n"
   for point in data.points or []:
     ret += "\t" + str(point.name) + "\t" + str(point.state) + "\t" + str(point) + "\n"
   ret += "Parcels:\t" + str(len(data.parcels)) + "\n"
   for parcel in data.parcels or []:
     ret += "\t" + str(parcel.name) + "\t" + str(parcel.type) + "\t" + str(parcel.area) + "\t" + str(parcel.center) + "\t" + \
-        str(parcel.state) + "\t" + str(parcel.klass) + "\t" + str(parcel.comment) + "\n"
+        str(parcel.state) + "\t" + str(parcel.klass) + "\t" + str(parcel.desc) + "\n"
   ret += "Instruments:\t" + str(len(data.survey.instruments)) + "\n"
   for instrument in data.survey.instruments or []:
     ret += "\t" + str(instrument.stationName or instrument.id) + "\t" + str(instrument.height) + "\t" + str(instrument.point) + "\n"
