@@ -51,27 +51,18 @@ def exportJSONfg(data, file = None):
           'type': "LineString",
           'featureType': 'observation',
           'coordinates': [trans.transform(*obs.setupPoint), trans.transform(*obs.targetPoint)],
-          'properties': {
-            # What should go in here?
-          }
         }
     elif isinstance(obs, ReducedArcObservation) and obs.geom is not None:
       return {
         'type': "LineString",
         'featureType': 'observation',
         'coordinates': simplifyPoly(trans, Geom.flatten([obs.geom])),
-        'properties': {
-          # What should go in here?
-        }
       }
     elif isinstance(obs, RedHorizPos):
       return {
         'type': "Point",
         'featureType': 'observation',
         'coordinates': list(trans.transform(obs.northing, obs.easting)),
-        'properties': {
-          # What should go in here?
-        }
       }
     else:
       print("Unexpected observation type!", type(obs))
@@ -90,13 +81,14 @@ def exportJSONfg(data, file = None):
         'featureType': 'boundary', # FIXME: This will need to support other feature types. What's the logic here?
         'geometry': {
           'type': "LineString",
-          'coordinates': simplifyPoly(trans, seg),
-          'properties': {'comment': ""}
+          'coordinates': simplifyPoly(trans, seg)
         },
         'place': {
           'type': "LineString",
-          'coordinates': simplifyPoly(Transformer.from_crs(fileproj, fileproj), seg),
-          'properties': {'comment': ""}
+          'coordinates': simplifyPoly(Transformer.from_crs(fileproj, fileproj), seg)
+        },
+        'properties': {
+          'comment': ""
         }
       }
     else:
@@ -109,17 +101,14 @@ def exportJSONfg(data, file = None):
         'featureType': 'boundary', # FIXME: This will need to support other feature types. What's the logic here?
         'geometry': {
           'type': "LineString",
-          'coordinates': [trans.transform(*seg.start), trans.transform(*seg.end)],
-          'properties': {
-            'comment': ""
-           }
+          'coordinates': [trans.transform(*seg.start), trans.transform(*seg.end)]
         },
         'place': {
           'type': "LineString",
-          'coordinates': [list(seg.start), list(seg.end)],
-          'properties': {
-            'comment': ""
-          }
+          'coordinates': [list(seg.start), list(seg.end)]
+        },
+        'properties': {
+          'comment': ""
         }
       }
     observedVecs.append(x)
@@ -160,7 +149,10 @@ def exportJSONfg(data, file = None):
         'type': "Feature",
         'featureType': "sosa:ObservationCollection",
         'geometry': exportObs(observation, 'wgs84'),
-        'place': exportObs(observation, fileproj)
+        'place': exportObs(observation, fileproj),
+        'properties': {
+          # What goes here?
+        }
       } for groupID, group in data.survey.observationGroups.items() for i, observation in enumerate(group)]
   }
   if file is not None: json.dump(ret, file, indent=4)
