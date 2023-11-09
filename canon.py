@@ -96,14 +96,13 @@ def importCSDM(file):
 
   parcels = []
   for parcel in data.get("parcels", []):
-    geoms = []
     properties = None # I'm not particularly keen on how this bit is structured.
     for geom in parcel["features"]:
-      if properties is None: properties = geom["properties"]
+      geoms = []
       geoms.append(Geom(geom["id"],
         [segments.get(ref if isinstance(ref, str) else ref.get('$ref'))
           for ref in geom["topology"]["references"]]))
-    parcels.append(Parcel.fromProperties(None, None, geoms, properties))
+      parcels.append(Parcel.fromProperties(None, None, geoms, geom["properties"], geom["id"])) # TODO: Differentiate primary vs secondary
     
   return Cadastre(projection, {}, None, monuments, points, parcels, Survey(metadata, instruments, observationGroups))
 

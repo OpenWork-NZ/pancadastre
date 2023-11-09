@@ -138,22 +138,22 @@ def exportJSONfg(data, file = None):
         'properties': monument.properties
       } for i, monument in enumerate(data.monuments)] + observedVecs + [{
         'type': 'Feature',
-        'id': parcel.name or i,
+        'id': parcel.oid or i,
         'featureType': 'boundary',
         'links': [],
         'time': '', # Appears to be missing from LandXML
         'geometry': exportGeom(parcel, 'wgs84'),
         'place': exportGeom(parcel, fileproj),
         'properties': parcel.properties
-      } for i, parcel in enumerate(data.parcels)] + [{
-        'type': "Feature",
-        'featureType': "sosa:ObservationCollection",
-        'geometry': exportObs(observation, 'wgs84'),
-        'place': exportObs(observation, fileproj),
-        'properties': {
-          # What goes here?
-        }
-      } for groupID, group in data.survey.observationGroups.items() for i, observation in enumerate(group)]
+      } for i, parcel in enumerate(data.parcels)]# + [{
+#        'type': "Feature",
+#        'featureType': "sosa:ObservationCollection",
+#        'geometry': exportObs(observation, 'wgs84'),
+#        'place': exportObs(observation, fileproj),
+#        'properties': {
+#          # What goes here?
+#        }
+#      } for groupID, group in data.survey.observationGroups.items() for i, observation in enumerate(group)]
   }
   if file is not None: json.dump(ret, file, indent=4)
   else: return ret

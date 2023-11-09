@@ -117,8 +117,9 @@ class Point:
     return Point(self.survey, self.name, self.state, self.northing/other, self.easting/other, str(self.objID) + "/" + str(other))
 
 class Parcel:
-  def __init__(self, name, area, type, state, klass, format, center, geom, titleDoc, address=None, desc = None, properties = None):
+  def __init__(self, name, area, type, state, klass, format, center, geom, titleDoc, address=None, desc = None, properties = None, oid = None):
     props = properties or {}
+    self.oid = oid or id(self)
     self.name = name or props.get('name', {}).get('label')
     self.area = area or props.get('area')
     self.type = type or props.get('parcelType')
@@ -134,8 +135,8 @@ class Parcel:
     if properties is None: self.populateProperties()
 
   @staticmethod
-  def fromProperties(format, center, geom, properties, address = None):
-    return Parcel(None, None, None, None, None, format, center, geom, None, address = address, properties = properties)
+  def fromProperties(format, center, geom, properties, address = None, oid = None):
+    return Parcel(None, None, None, None, None, format, center, geom, None, address = address, properties = properties, oid = oid)
 
   def populateProperties(self):
     self.properties['name'] = {'label': self.name, 'hasPart': []}
