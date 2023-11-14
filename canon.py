@@ -4,6 +4,11 @@ from jsonfg import * # I question this...
 
 def importCSDM(file):
   from copy import deepcopy
+  ids = set() # For validation
+  def isUID(id):
+    if id in ids: print("Warning: Duplicate ID!", id)
+    ids.add(id)
+  
   data = json.load(file)
   assert data["type"] == "FeatureCollection"
   projection = Projection(data.get("horizontalCRS"))
@@ -28,6 +33,7 @@ def importCSDM(file):
   pointsIndex = {}
   for collection in data["points"]:
     for monument in collection["features"]:
+      isUID(monument["id"])
       monumentedBy = monument["properties"].get("monumentedBy")
       if monumentedBy is None:
         print("'monumentedBy' property is mandatory!", monument["id"], monument["properties"])
@@ -54,6 +60,7 @@ def importCSDM(file):
   for group in data["observedVectors"]:
     observations = []
     for observation in group["features"]:
+      isUID(observation["id"])
       # FIXME: Is it a bug if a point doesn't have a measure? Should this be reported?
       measure = measures.get(observation["id"]) or Measure.fromProperties({}, {})
       if observation["topology"]["type"].lower() == "linestring":
@@ -98,6 +105,7 @@ def importCSDM(file):
   for parcel in data.get("parcels", []):
     properties = None # I'm not particularly keen on how this bit is structured.
     for geom in parcel["features"]:
+      isUID(geom["id"])
       geoms = []
       geoms.append(Geom(geom["id"],
         [segments.get(ref if isinstance(ref, str) else ref.get('$ref'))
