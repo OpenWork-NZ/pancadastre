@@ -3,12 +3,13 @@ from pyproj import Transformer
 import json
 
 # TODO: Tweak according to surveyfeatures.json, circular_arc.json
-def exportJSONfg(data, file = None):
+def exportJSONfg(data, file = None, isGeoJSON = False):
   def simplifyPoly(trans, lines):
     if len(lines) == 2:
-      return [list(trans.transform(*lines[0].start)), list(trans.transform(*lines[0].end)), list(trans.transform(*lines[1].end))]
+      return [transform(lines[0].start, trans),
+          transform(lines[0].end, trans), transform(lines[1].end, trans)]
     elif len(lines) == 1:
-      return [list(trans.transform(*lines[0].start)), list(trans.transform(*lines[0].end))]
+      return [transform(lines[0].start, trans), transform(lines[0].end, trans)]
     elif len(lines) == 0:
       return []
 
@@ -29,28 +30,29 @@ def exportJSONfg(data, file = None):
 
     points = []
     for line in lines:
-      points.append(trans.transform(*line.start))
-      points.append(trans.transform(*line.end))
+      points.append(transform(line.start, trans))
+      points.append(transform(line.end, trans))
     i = 1
     while i < len(points):
       if points[i] == points[i-1]: points.pop(i)
       else: i += 1
-    return list(map(list, points))
+    return list(points)
 
   def exportGeom(parcel, proj):
-    trans = Transformer.from_crs(fileproj, proj, always_xy = proj.lower() == 'wgs84')
+    trans = Transformer.from_crs(fileproj, proj)
     return {
       'type': 'Polygon',
       'coordinates': [simplifyPoly(trans, Geom.flatten(geom.segments)) for geom in parcel.geom]
     }
   def exportObs(obs, proj):
-    trans = Transformer.from_crs(fileproj, proj, always_xy = proj.lower() == 'wgs84')
+    trans = Transformer.from_crs(fileproj, proj)
     if isinstance(obs, ReducedObservation) or (
         isinstance(obs, ReducedArcObservation) and obs.geom is None):
       return {
           'type': "LineString",
           'featureType': 'observation',
-          'coordinates': [trans.transform(*obs.setupPoint), trans.transform(*obs.targetPoint)],
+          'coordinates': [transform(obs.setupPoint, trans),
+              transform(obs.targetPoint, trans)],
         }
     elif isinstance(obs, ReducedArcObservation) and obs.geom is not None:
       return {
@@ -62,14 +64,19 @@ def exportJSONfg(data, file = None):
       return {
         'type': "Point",
         'featureType': 'observation',
-        'coordinates': list(trans.transform(obs.northing, obs.easting)),
+        'coordinates': transform(obs, trans),
       }
     else:
       print("Unexpected observation type!", type(obs))
   fileproj = data.projection.horizontal
   if fileproj[:5] == "epsg:": fileproj = fileproj[5:]
-  trans = Transformer.from_crs(fileproj, 'wgs84', always_xy = True)
-  
+  trans = Transformer.from_crs(fileproj, 'wgs84')
+  def transform(pt, transformer = trans):
+    crs = transformer.target_crs.name
+    if crs.lower().startswith("wgs 84") and isGeoJSON:
+      return list(reversed(trans.transform(pt.northing, pt.easting)))
+    else:
+      return list(trans.transform(pt.northing, pt.easting))
   lines = set()
   observedVecs = []
   for i, seg in enumerate(seg for parcel in data.parcels for geom in parcel.geom for seg in geom.segments):
@@ -101,7 +108,7 @@ def exportJSONfg(data, file = None):
         'featureType': 'boundary', # FIXME: This will need to support other feature types. What's the logic here?
         'geometry': {
           'type': "LineString",
-          'coordinates': [trans.transform(*seg.start), trans.transform(*seg.end)]
+          'coordinates': [transform(seg.start), transform(seg.end)]
         },
         'place': {
           'type': "LineString",
@@ -129,7 +136,7 @@ def exportJSONfg(data, file = None):
         'featureType': "SurveyPoint", # Either CadastralMark, Boundary, or Geodetic
         'geometry': {
           'type': "Point",
-          'coordinates': list(trans.transform(*monument.point)) if monument.point is not None else []
+          'coordinates': transform(monument.point) if monument.point is not None else []
         },
         'place': {
           'type': "Point",
@@ -159,7 +166,7 @@ def exportJSONfg(data, file = None):
   else: return ret
 
 def exportGeoJSON(data, file):
-  data = exportJSONfg(data)
+  data = exportJSONfg(data, isGeoJSON = True)
   del data["horizontalCRS"]
   for datum in data["features"]:
     del datum["place"]
