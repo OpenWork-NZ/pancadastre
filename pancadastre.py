@@ -115,6 +115,10 @@ if __name__ == "__main__":
     global wrote_output
     from os import path
     filename = path.splitext(path.basename(infile))[0]
+    
+    if data.projection is None or data.projection.horizontal is None:
+      print("WARNING! No projection system specified! Defaulting to wgs84")
+      data.projection = Projection('wgs84')
 
     if args.epsg: data.projection = Projection(args.epsg)
     if args.interpolate:
