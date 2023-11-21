@@ -158,7 +158,7 @@ def importLandXML(file):
                                 surveyHeaderEl.get('surveyFormat', surveyHeaderEl.get('format')),
                                 # TODO: Capture county, desc, endTime, surveyor, surveyorFirm, surveyorReference, class
                                 # LINZ has it as SurveyPurpose
-                                i(surveyHeaderEl.find('{http://www.landxml.org/schema/LandXML-1.2}PurposeOfSurvey') or surveyHeaderEl.find('{http://www.landxml.org/schema/LandXML-1.2}SurveyPurpose')).get('name', surveyHeaderL.get('surveyPurpose')),
+                                i(surveyHeaderEl.find('{http://www.landxml.org/schema/LandXML-1.2}PurposeOfSurvey') or surveyHeaderEl.find('{http://www.landxml.org/schema/LandXML-1.2}SurveyPurpose')).get('name', surveyHeaderEl.get('surveyPurpose')),
                                 i(surveyHeaderEl.find('{http://www.landxml.org/schema/LandXML-1.2}HeadOfPower')).get('name'),
                                 [AdminArea(l.get('adminAreaType'), l.get('adminAreaName'),
                                           l.get('adminAreaCode'))
@@ -186,9 +186,11 @@ def importLandXML(file):
         # FIXME: target point may be a sub-element for LandOnline
         # Be resilient to missing purpose.
         if observation.tag == "{http://www.landxml.org/schema/LandXML-1.2}ReducedObservation": # All in LandOnline are this type.
+          if observation.get('targetSetupID') is not None:
+            print("Actual target instrument!") # Do these exist?
           observations.append(ReducedObservation(observation.get('purpose'),
               instrumentsIndex.get(observation.get('setupID')),
-              instrumentsIndex.get(observation.get('targetSetupID')),
+              instrumentsIndex.get(observation.get('targetSetupID'), InstrumentSetup(None, "", 0, pointsIndex.get(observation.find('{http://www.landxml.org/schema/LandXML-1.2}TargetPoint').get('pntRef')), synthetic = True)),
               float(observation.get('azimuth')), float(observation.get('horizDistance', '0')),
               observation.get('equipmentUsed'), observation.get('distanceType'),
               observation.get('azimuthType'), observation.get('name'), observation.get('date'))) # Capture azimuthAccuracy, distanceAccuracy

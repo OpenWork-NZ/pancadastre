@@ -1,5 +1,5 @@
 from datetime import datetime
-from math import floor, sqrt
+from math import floor, isclose, sqrt
 
 class Cadastre:
   def __init__(self, projection, features, units, monuments, points, parcels, survey, boundaries = []):
@@ -133,7 +133,7 @@ class Parcel:
     self.geom = geom
     self.titleDoc = titleDoc or props.get('interestRef') # Contains LandXML Title element or CSDM interestRef property.
     self.address = address # Do we want?
-    self.properties = properties
+    self.properties = properties or {}
     if properties is None: self.populateProperties()
 
   @staticmethod
@@ -298,11 +298,15 @@ class Annotation:
     self.parcel = parcel
 
 class InstrumentSetup:
-  def __init__(self, id, stationName, height, point):
+  def __init__(self, id, stationName, height, point, synthetic = False):
     self.id = id
     self.stationName = stationName
     self.height = height
     self.point = point
+    if point is None:
+      print("ERROR: Failed to find point for instrument", stationName, ", defaulting to Null Island!")
+      self.point = Point("", "Null Island", "", 0, 0)
+    self.synthetic = synthetic # targetSetupPoints?
     self.point.instruments.append(self)
     self.observations = []
 
@@ -355,7 +359,13 @@ class ReducedObservation(Observation):
     props = properties or {}
     self.purpose = purpose or props.get("purpose")
     self.setup = setup
+    if setup is None:
+      print("ERROR: Failed to find setup instrument for observation", name, ", defaulting to Null Island!")
+      self.setup = InstrumentSetup("404", "Not Found", 0, Point("", "Null Island", "", 0, 0))
     self.targetSetup = targetSetup
+    if targetSetup is None:
+      print("ERROR: Failed to find target instrument for observation", name, ", default to Null Island!")
+      self.targetSetup = InstrumentSetup("404", "Not Found", 0, Point("", "Null Island", "", 0, 0))
     self.azimuth = azimuth
     self.horizDist = horizDist
     self.equipment = equipment
@@ -389,7 +399,7 @@ class ReducedObservation(Observation):
   def populateProperties(self):
     # Start leaving hasPart blank...
     self.properties['name'] = {'label': self.name, 'hasPart': []}
-    self.properties['ptQuality'] = self.point.observation.distanceQuality
+    self.properties['ptQuality'] = self.setupPoint.observation.distanceQuality
     self.properties['purpose'] = self.purpose
     self.properties['comment'] = None
     for monument in self.setupPoint.monuments:
