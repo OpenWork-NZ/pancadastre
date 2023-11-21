@@ -19,13 +19,15 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
         if line.end in list(lines[i-1]):
           line.start, line.end = line.end, line.start
         elif line.start not in list(lines[i-1]):
-          print("Non-contiguous line segments!", line, lines)
+          print("WARNING: Non-contiguous line segments (last)!", line, lines)
         # Otherwise, it's fine!
       else:
         if line.start in list(lines[i+1]):
           line.start, line.end = line.end, line.start
         elif line.end not in list(lines[i+1]):
-          print("Non-contiguous line segments!", line, lines)
+          print(list(lines[i+1])[0], list(lines[i+1])[1])
+          print(line.end, line.end == list(lines[i+1])[0], line.end == list(lines[i+1])[1])
+          print("WARNING: Non-contiguous line segments!", line, lines)
         # Otherwise, it's fine!
 
     points = []

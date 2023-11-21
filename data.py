@@ -1,5 +1,5 @@
 from datetime import datetime
-from math import isclose, sqrt
+from math import floor, sqrt
 
 class Cadastre:
   def __init__(self, projection, features, units, monuments, points, parcels, survey, boundaries = []):
@@ -101,6 +101,8 @@ class Point:
     yield self.easting
 
   def __eq__(self, other):
+    def isclose(x, y): # Handles both floating point & projection imprecision
+      return int(floor(x/100)) == int(floor(x/100))
     return isclose(self.northing, other.northing) and isclose(self.easting, other.easting)
 
   def __str__(self):
