@@ -16,6 +16,7 @@ from landxml import *
 from canon import *
 from jsonfg import *
 from rdf import *
+from wa import *
 
 #class ReducedVertPos(Observation) for 3D?
 
@@ -98,6 +99,7 @@ if __name__ == "__main__":
   argparser.add_argument('-X', '--LANDXML', help="LandXML input file", nargs='+')
   argparser.add_argument('-V', '--vocab', help="Jurisdictional vocabulary to align to")
   argparser.add_argument('-C', '--CSDM', help="JSON-Topology input file", nargs='+')
+  argparser.add_argument('-W', '--WA', help="Western Australia CSD input format (dramatically incomplete!)")
   argparser.add_argument('--interpolate', help="Interpolate curves, possibly specifying length in meters of each segment (default 1m)",
       const=1, type=int, nargs='?')
   argparser.add_argument('--epsg', help="Overwrite the projection being used.")
@@ -166,6 +168,15 @@ if __name__ == "__main__":
       with open(source) as f: export(source, importCSDM(f))
     except KeyError as err:
       print("Unresolvable link or missing property!", err)
+    except Exception as err:
+      print(err)
+    read_input = True
+  for source in args.WA or []:
+    redirect_errors(source)
+    try:
+      with open(source) as f: export(source, importWA_CSD(f))
+    except KeyError as err:
+      print("Unresolvable link!", err)
     except Exception as err:
       print(err)
     read_input = True

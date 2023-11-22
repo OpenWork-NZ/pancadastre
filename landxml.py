@@ -94,6 +94,29 @@ def importLandXML(file):
             continue
           path.append(Curve.from_center(segment.get('oID', name + str(i)), segment.get('rot') == 'cw',
                                       float(segment.get('radius', '0')), start, mid, end, segment.get('state')))
+        elif segment.tag == "{http://www.landxml.org/schema/LandXML-1.2}IrregularLine":
+          start = segment.find('{http://www.landxml.org/schema/LandXML-1.2}Start')
+          if start is not None and start.get('pntRef') and pointsIndex.get(start.get('pntRef')):
+            start = pointsIndex.get(start.get('pntRef'))
+          elif start.text.strip() != "":
+            start = Point(None, None, None, *[float(x) for x in start.text.strip().split()])
+          else:
+            print("Invalid start reference")
+            continue
+          end = segment.find('{http://www.landxml.org/schema/LandXML-1.2}End')
+          if end is not None and end.get('pntRef') and pointsIndex.get(end.get('pntRef')):
+            end = pointsIndex.get(end.get('pntRef'))
+          elif end.text.strip() != "":
+            start = Point(None, None, None, *[float(x) for x in end.text.strip().split()])
+          else:
+            print("Invalid end reference")
+            continue
+          points = segment.find('{http://www.landxml.org/schema/LandXML-1.2}PntList2D')
+          if points is not None and points.text.strip() != "":
+            points = points.text # FIXME: Actually parse this!
+          else:
+            points = None
+          path.append(IrregularLine(segment.get('oID', name + str(i)), start, end, segment.get('state'), points))
         else:
           print("Unsupported geometry type!", segment.tag)
       geoms.append(Geom(name, path))
@@ -109,9 +132,9 @@ def importLandXML(file):
     center = parcel.find('{http://www.landxml.org/schema/LandXML-1.2}Center') # CSDM model does not capture this, should we?
     if center is None:
       centerPt = None # Accept absence
-    elif not center.get('pntRef'):
+    elif center.get('pntRef') is not None:
       centerPt = pointsIndex.get(center.get('pntRef'))
-    elif center.text.strip() != "":
+    elif center.text is not None and center.text.strip() != "":
       centerPt = Point(None, None, None, *[float(x) for x in center.text.strip().split()])
     else:
       centerPt = None
@@ -142,9 +165,9 @@ def importLandXML(file):
     parcels.append(parcel)
     parcelsIndex[parcel.name] = parcel
 
-  features = dict() # Where did we see these? Failing to find the element again in sample files.
+  featuresIndex = dict() # Where did we see these? Failing to find the element again in sample files.
   for features in file.find('{http://www.landxml.org/schema/LandXML-1.2}PlanFeatures') or []:
-    features[features.get('name')] = [Feature(l.get('desc'), l.get('name'), parseGeoms(l))
+    featuresIndex[features.get('name')] = [Feature(l.get('desc'), l.get('name'), parseGeoms(l))
                                       for l in features.iter()]
 
   surveyEl = file.find('{http://www.landxml.org/schema/LandXML-1.2}Survey')
@@ -186,37 +209,48 @@ def importLandXML(file):
         # FIXME: target point may be a sub-element for LandOnline
         # Be resilient to missing purpose.
         if observation.tag == "{http://www.landxml.org/schema/LandXML-1.2}ReducedObservation": # All in LandOnline are this type.
-          if observation.get('targetSetupID') is not None:
-            print("Actual target instrument!") # Do these exist?
+          targetSetup = instrumentsIndex.get(observation.get('targetSetupID'))
+          if targetSetup is None:
+            targetSetup = InstrumentSetup(None, "", 0, pointsIndex.get(i(observation.find('{http://www.landxml.org/schema/LandXML-1.2}TargetPoint')).get('pntRef')), synthetic = True)
           observations.append(ReducedObservation(observation.get('purpose'),
               instrumentsIndex.get(observation.get('setupID')),
-              instrumentsIndex.get(observation.get('targetSetupID'), InstrumentSetup(None, "", 0, pointsIndex.get(observation.find('{http://www.landxml.org/schema/LandXML-1.2}TargetPoint').get('pntRef')), synthetic = True)),
+              targetSetup,
               float(observation.get('azimuth')), float(observation.get('horizDistance', '0')),
               observation.get('equipmentUsed'), observation.get('distanceType'),
               observation.get('azimuthType'), observation.get('name'), observation.get('date'))) # Capture azimuthAccuracy, distanceAccuracy
               # If azimuthType or distanceType is "adopted" need to capture adoptedAzimuthSurvey, azimuthDistanceSurvey, & azimuthAdoptionFactor.
         elif observation.tag == "{http://www.landxml.org/schema/LandXML-1.2}ReducedArcObservation":
+          targetSetup = instrumentsIndex.get(observation.get('targetSetupID'))
+          if targetSetup is None:
+            targetSetup = InstrumentSetup(None, "", 0, pointsIndex.get(i(observation.find('{http://www.landxml.org/schema/LandXML-1.2}TargetPoint')).get('pntRef')), synthetic = True)
           observations.append(ReducedArcObservation(observation.get('purpose'),
               instrumentsIndex.get(observation.get('setupID')),
-              instrumentsIndex.get(observation.get('targetSetupID')),
+              targetSetup,
               float(observation.get('chordAzimuth')), float(observation.get('radius')),
               float(observation.get('length')), observation.get('rot') == 'cw',
               observation.get('equipmentUsed'), float(observation.get('arcLengthAccuracy')),
               observation.get('arcType'), observation.get('name'), observation.get('date')))
         elif observation.tag == "{http://www.landxml.org/schema/LandXML-1.2}RedHorizontalPosition":
-          observation.append(RedHorizPos(observation.get('desc'),
+          def fromisoformat(txt):
+            if txt is None: return None
+            try:
+              return datetime.fromisoformat(txt)
+            except err:
+              print("Unreadable time ", txt, ", ignoring!")
+              return None
+          observations.append(RedHorizPos(observation.get('desc'),
               observation.get('name'), observation.get('oID'),
               instrumentsIndex[observation.get('setupID')],
-              datetime.fromisoformat(observation.get('date')),
+              fromisoformat(observation.get('date')),
               observation.get('horizontalDatum'),
               float(observation.get('latitude')), float(observation.get('longitude')),
-              observation.get('horizontalFix'), int(observation.get('order'))))
+              observation.get('horizontalFix'), int(observation.get('order', 0))))
         else:
           print("Unsupported tag!", observation.tag)
       observationGroups[el.get('id')] = observations
     survey = Survey(surveyMeta, instruments, observationGroups)
 
-  return Cadastre(proj, features, units, monuments, points, parcels, survey)
+  return Cadastre(proj, featuresIndex, units, monuments, points, parcels, survey)
 
 def exportLandXML(data, file):
   root = ET.Element("{http://www.landxml.org/schema/LandXML-1.2}LandXML") # FIXME: I forgot to capture the attributes on the root element

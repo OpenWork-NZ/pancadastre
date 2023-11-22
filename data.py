@@ -101,8 +101,8 @@ class Point:
     yield self.easting
 
   def __eq__(self, other):
-    def isclose(x, y): # Handles both floating point & projection imprecision
-      return int(floor(x/100)) == int(floor(x/100))
+#    def isclose(x, y): # Handles both floating point & projection imprecision
+#      return int(floor(x/100)) == int(floor(x/100))
     return isclose(self.northing, other.northing) and isclose(self.easting, other.easting)
 
   def __str__(self):
@@ -180,6 +180,37 @@ class Line(Segment):
     self.start = start
     self.end = end
     self.state = state # NOTE: Are states on lines needed?
+    self.start.segments.append(self)
+    self.end.segments.append(self)
+
+  @property
+  def observation(self):
+    for observation in self.start.observations:
+      if self.start == observation.setupPoint and self.end == observation.targetPoint: return observation
+      if self.end == observation.setupPoint and self.start == observation.targetPoint: return observation
+
+  @property
+  def observationProperties(self): return self.observation.properties
+    
+  def __repr__(self):
+    return "Line " + str(self.id) + "(" + repr(self.start) + " -> " + repr(self.end) + ")"
+
+  def __iter__(self):
+    yield self.start
+    yield self.end
+
+  def __hash__(self):
+    return hash(self.id)
+  def __eq__(self, other):
+    return self.id == other.id
+
+class IrregularLine(Segment):
+  def __init__(self, id, start, end, state = None, points = []):
+    self.id = id
+    self.start = start
+    self.end = end
+    self.state = state # NOTE: Are states on lines needed?
+    self.points = points
     self.start.segments.append(self)
     self.end.segments.append(self)
 
@@ -415,7 +446,13 @@ class ReducedArcObservation(Observation):
     props = properties or {}
     self.purpose = purpose or props.get("purpose")
     self.setup = setup
+    if setup is None:
+      print("ERROR: Failed to find setup instrument for observation", name, ", defaulting to Null Island!")
+      self.setup = InstrumentSetup("404", "Not Found", 0, Point("", "Null Island", "", 0, 0))
     self.targetSetup = targetSetup
+    if targetSetup is None:
+      print("ERROR: Failed to find target instrument for observation", name, ", default to Null Island!")
+      self.targetSetup = InstrumentSetup("404", "Not Found", 0, Point("", "Null Island", "", 0, 0))
     self.chordAzimuth = chordAzimuth or props.get("hasResult", {}).get("angle")
     self.radius = radius or props.get("hasResult", {}).get("radius")
     self.length = length or props.get("hasResult", {}).get("distance")
@@ -457,7 +494,7 @@ class ReducedArcObservation(Observation):
     self.properties['hasResult'] = {
         'distance': self.length, 'angle': self.chordAzimuth, 'radius': self.radius
     }
-    self.properties['rot'] = "cw" if obs.is_clockwise else "ccw"
+    self.properties['rot'] = "cw" if self.is_clockwise else "ccw"
     self.properties['distanceType'] = 'icsmdistancetype:ellipsoidal' # What should this be?
     self.properties['distanceProvenance'] = self.setup.point.state # Reformat?
     self.properties['angleType'] = self.arcType # Reformat?
@@ -498,7 +535,6 @@ class RedHorizPos(Observation): # Spell out "Reduced"
     self.properties['hasResult'] = {'coord': [self.northing, self.easting]}
     self.properties['distanceType'] = 'icsmdistancetype:ellipsoidal'
     self.properties['distanceProvenance'] = self.setup.point.state # Reformat?
-    self.properties['angleType'] = self.arcType # Reformat?
     self.properties['order'] = self.order
     self.properties['distanceQuality'] = self.distanceQuality # TODO: Thesaurus
     self.properties['angleQuality'] = self.angleQuality

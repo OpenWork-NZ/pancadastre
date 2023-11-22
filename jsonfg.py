@@ -25,8 +25,6 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
         if line.start in list(lines[i+1]):
           line.start, line.end = line.end, line.start
         elif line.end not in list(lines[i+1]):
-          print(list(lines[i+1])[0], list(lines[i+1])[1])
-          print(line.end, line.end == list(lines[i+1])[0], line.end == list(lines[i+1])[1])
           print("WARNING: Non-contiguous line segments!", line, lines)
         # Otherwise, it's fine!
 
@@ -74,11 +72,11 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
   if fileproj[:5] == "epsg:": fileproj = fileproj[5:]
   trans = Transformer.from_crs(fileproj, 'wgs84')
   def transform(pt, transformer = trans):
-    crs = transformer.target_crs.name
-    if crs.lower().startswith("wgs 84") and isGeoJSON:
-      return list(reversed(trans.transform(pt.northing, pt.easting)))
+    crs = transformer.target_crs
+    if crs.name.lower().startswith("wgs 84"):
+      return list(reversed(transformer.transform(pt.northing, pt.easting)))
     else:
-      return list(trans.transform(pt.northing, pt.easting))
+      return list(transformer.transform(pt.northing, pt.easting))
   lines = set()
   observedVecs = []
   for i, seg in enumerate(seg for parcel in data.parcels for geom in parcel.geom for seg in geom.segments):
