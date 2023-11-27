@@ -58,6 +58,8 @@ class Monument:
           {'type': "Stamp", 'label': self.type} # Is this right?
         ]
       },
+      'label': self.name,
+      'markType': self.type,
       'ptQuality': self.point.observation.distanceQuality
           if self.point.observation is not None else None,
       'purpose': self.point.purpose,
@@ -135,6 +137,7 @@ class Parcel:
     self.address = address # Do we want?
     self.properties = properties or {}
     if properties is None: self.populateProperties()
+    self.properties['label'] = name
 
   @staticmethod
   def fromProperties(format, center, geom, properties, address = None, oid = None):
@@ -413,6 +416,8 @@ class ReducedObservation(Observation):
     if self.targetSetup is not None:
       self.targetSetup.observations.append(self)
     if properties is None: self.populateProperties()
+    self.properties['distance'] = horizDist
+    self.properties['azimuth'] = azimuth
     self.measure = measure
 
   @property
@@ -470,6 +475,9 @@ class ReducedArcObservation(Observation):
     if self.targetSetup is not None:
       self.targetSetup.observations.append(self)
     if self.properties == {}: self.populateProperties()
+    self.properties['distance'] = length
+    self.properties['radius'] = radius
+    self.properties['angle'] = chordAzimuth
     self.measure = measure
     self.geom = None # For the CSDM schema
     self.center = None

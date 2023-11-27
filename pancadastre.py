@@ -17,6 +17,7 @@ from canon import *
 from jsonfg import *
 from rdf import *
 from wa import *
+from reports import *
 
 #class ReducedVertPos(Observation) for 3D?
 
@@ -129,7 +130,13 @@ if __name__ == "__main__":
     if args.jsonfg:
       with open(args.jsonfg.replace("?", filename), "w") as f: exportJSONfg(data, f)
       wrote_output = True
-    if args.geojson:
+    # Extra condition suppresses GeoJSON files for empty geometry counts.
+    if args.geojson and (len(data.monuments) +
+        sum(1 for parcel in data.parcels
+            for geom in parcel.geom for seg in geom.segments) +
+        sum(1 for _ in data.survey.observationGroups.items()
+            for i, observation in enumerate(group))
+        > 0):
       with open(args.geojson.replace("?", filename), "w") as f:
         exportGeoJSON(data, f)
       wrote_output = True
