@@ -20,18 +20,21 @@ def exportSummary(data):
 
   ret += "Monuments:\t" + str(len(data.monuments)) + "\n"
   for monument in data.monuments or []:
-    ret += "\t" + str(monument.name) + "\t" + str(monument.point) + "\t" + str(monument.state) + "\t" + str(monument.condition) + "\n"
-  ret += "Points:\t" + str(len(data.points)) + "\n"
-  for point in data.points or []:
-    ret += "\t" + str(point.name) + "\t" + str(point.state) + "\t" + str(point) + "\n"
+    ret += "\t" + str(monument.oid) + "\t" + str(monument.name) + "\t" + str(monument.point) + "\t" + str(monument.state) + "\t" + str(monument.condition) + "\n"
+  # Since CSDM schema doesn't differentiate points from lines,
+  # This is a reflection of LandXML.
+#  ret += "Points:\t" + str(len(data.points)) + "\n"
+#  for point in data.points or []:
+#    ret += "\t" + str(point.name or point.objID) + "\t" + str(point.state) + "\t" + str(point) + "\n"
   ret += "Parcels:\t" + str(len(data.parcels)) + "\n"
   for parcel in data.parcels or []:
-    ret += "\t" + str(parcel.name) + "\t" + str(parcel.type) + "\t" + str(parcel.area) + "\t" + str(parcel.center) + "\t" + \
+    ret += "\t" + str(parcel.oid) + "\t" + str(parcel.name) + "\t" + str(parcel.type) + "\t" + str(parcel.area) + "\t" + str(parcel.center) + "\t" + \
         str(parcel.state) + "\t" + str(parcel.klass) + "\t" + str(parcel.desc) + "\n"
   ret += "Observations:\t" + str(len([y for x in data.survey.observationGroups.values() for y in x])) + "\n"
   for label, observations in data.survey.observationGroups.items():
     ret += "\t\t" + label + "\n"
     for observation in observations:
+      # TODO: Capture input's object IDs to echo here...
       ret += "\t" + str(observation.name) + "\t" + str(observation.date) + "\t" + str(observation.purpose) + "\t"
       if isinstance(observation, ReducedObservation):
         ret += str(observation.setup.stationName or observation.setup.id) + "\t"
