@@ -60,6 +60,7 @@ def importCSDM(file):
 
   segments = {}
   observationGroups = {} # TODO: Build!
+  observationsIndex = {}
   for group in data["observedVectors"]:
     observations = []
     for observation in group["features"]:
@@ -73,6 +74,7 @@ def importCSDM(file):
           # Distance comes from vector observations, we might want to split that class out!
           obs = ReducedObservation(None, instrument(start["id"], (start["properties"].get("name") or {}).get("label", start["id"]), None, start[""]), instrument(end["id"], (end["properties"].get("name") or {}).get("label", end["id"]), None, end[""]), measure.azimuth, measure.dist, measure.equipment, measure.distType, measure.azimuthType, observation["id"], start.get("time", data.get("time")), start["properties"], measure = measure)
           observations.append(obs)
+          observationsIndex[observation["id"]] = obs
 
           geom = Line(observation["id"], start[""], end[""])
           segments[observation["id"]] = geom
@@ -83,6 +85,7 @@ def importCSDM(file):
         # Distance, radius, etc comes from vector observations.
         obs = ReducedArcObservation(None, instrument(start["id"], (start["properties"].get("name") or {}).get("label", start["id"]), None, start[""]), instrument(end["id"], (end["properties"].get("name") or {}).get("label", end["id"]), None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start.get("time", data.get("time")), start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
         observations.append(obs)
+        observationsIndex[observation["id"]] = obs
 
         geom = Curve(observation["id"], measure.is_clockwise, measure.radius, start[""], mid[""], end[""])
         segments[observation["id"]] = geom
@@ -95,25 +98,20 @@ def importCSDM(file):
         mid = pointsIndex[d(observation["topology"]["references"][2])]
         obs = ReducedArcObservation(None, instrument(start["id"], (start["properties"].get("name") or {}).get("label", start["id"]), None, start[""]), instrument(end["id"], (end["properties"].get("name") or {}).get("label", end["id"]), None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start.get("time", data.get("time")), start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
         observations.append(obs)
+        observationsIndex[observation["id"]] = obs
 
         geom = Curve.from_center(observation["id"], measure.is_clockwise, measure.radius, start[""], mid[""], end[""])
         segments[observation["id"]] = geom
         obs.geom = geom
         obs.center = mid
       elif observation["topology"]["type"].lower() == "subtendedangle":
-        refs = observation["topology"]["references"]
-        setup = pointsIndex[d(refs[0])]
-        backsight = pointsIndex[d(refs[1])]
-        target = pointsIndex[d(refs[2])]
-        obs = SubtendedAngle(observation["id"], start.get("time", data.get("time")), None, instrument(setup["id"], (setup["properties"].get("name") or {}).get("label", setup["id"]), None, setup[""]), instrument(backsight["id"], (backsight["properties"].get("name") or {}).get("label", backsight["id"]), None, backsight[""]), instrument(target["id"], (target["properties"].get("name") or {}).get("label", target["id"]), None, target[""]), observation["properties"])
-        observations.append(obs)
-
-        geom = Line(observation["id"], setup[""], target[""])
-        segments[observation["id"]] = geom
+        # Handle in a separate pass...
+        pass
       elif observation["topology"]["type"].lower() == "circlebycenter":
         center = pointsIndex[d(observation["topology"]["references"])]
         obs = CircleByCenter(observation["id"], start.get("time", data.get("time")), None, instrument(center["id"], (center["properties"].get("name") or {}).get("label", center["id"]), None, center[""]), observation["topology"]["radius"], observation["properties"])
         observations.append(obs)
+        observationsIndex[observation["id"]] = obs
 
         radius = observation["topology"]["radius"]
         geoms = IDList([Curve.from_center(observation["id"] + "-cw", True, radius, center[""].offset1(-radius), center[""], center[""].offset1(radius)),
@@ -123,6 +121,15 @@ def importCSDM(file):
       else:
         print("Unexpected observedVector topology-type: ", observation["topology"]["type"])
     observationGroups[group["id"]] = observations
+  for group in data["observedVectors"]:
+    for observation in group["features"]:
+      if observation["topology"]["type"].lower() == "subtendedangle":
+        refs = observation["topology"]["references"]
+        setup = observationsIndex[d(refs[0])]
+        backsight = observationsIndex[d(refs[1])]
+        target = pointsIndex[d(refs[2])]
+        obs = SubtendedAngle(observation["id"], start.get("time", data.get("time")), None, setup, backsight, instrument(target["id"], (target["properties"].get("name") or {}).get("label", target["id"]), None, target[""]), observation["properties"])
+        observationGroups[group["id"]].append(obs)
 
   parcels = []
   for parcel in data.get("parcels", []):

@@ -583,10 +583,17 @@ class SubtendedAngle(Observation):
     self.name = name
     self.date = date
     self.purpose = purpose or properties.get("purpose")
-    self.setup = setup
-    self.backsightSetup = backsight
+    self.setupObs = setup
+    self.backsightObs = backsight
     self.targetSetup = target
     self.properties = properties
+
+  @property
+  def setup(self):
+    return self.setupObs.setup
+  @property
+  def backsightSetup(self):
+    return self.backsightObs.setup
 
 class CircleByCenter(Observation):
   def __init__(self, name, date, purpose, center, radius, properties = None):
