@@ -46,6 +46,7 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
     }
   def exportObs(obs, proj):
     trans = Transformer.from_crs(fileproj, proj)
+    obs.populateProperties() # Make them more legible!
     if isinstance(obs, ReducedObservation) or (
         isinstance(obs, ReducedArcObservation) and obs.geom is None):
       return {

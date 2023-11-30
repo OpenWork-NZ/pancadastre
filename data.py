@@ -510,6 +510,9 @@ class ReducedArcObservation(Observation):
         'distance': self.length, 'angle': self.chordAzimuth, 'radius': self.radius
     }
     self.properties['rot'] = "cw" if self.is_clockwise else "ccw"
+    self.properties['length'] = self.length
+    self.properties['radius'] = self.radius
+    self.properties['angle'] = self.chordAzimuth
     self.properties['distanceType'] = 'icsmdistancetype:ellipsoidal' # What should this be?
     self.properties['distanceProvenance'] = self.setup.point.state # Reformat?
     self.properties['angleType'] = self.arcType # Reformat?
