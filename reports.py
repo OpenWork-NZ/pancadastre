@@ -59,6 +59,16 @@ def exportSummary(data):
         ret += str(center.radius) + "\n"
       else:
         ret += "Unsupported observation type: " + repr(type(observation)) + "\n"
+  if len(data.survey.metadata.annotations) > 0:
+    ret += "Annotations:\t" + str(len(data.survey.metadata.annotations)) + "\n"
+  for ann in data.survey.metadata.annotations:
+    if ann.name is not None and ann.type is not None:
+      ret += "\t" + str(ann.name) + " (" + ann.type + ")"
+    elif ann.name is not None:
+      ret += "\t" + str(ann.name)
+    elif ann.type is not None:
+      ret += "\t(" + ann.type + ")"
+    ret += "\t" + str(ann.desc) + "\n"
   if len(data.referencedCSDs) > 0:
     ret += "References:\t" + str(len(data.referencedCSDs)) + "\n"
   for ref in data.referencedCSDs:

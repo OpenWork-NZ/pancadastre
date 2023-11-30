@@ -12,7 +12,8 @@ def importCSDM(file):
   data = json.load(file)
   assert data["type"] == "FeatureCollection"
   projection = Projection(data.get("compoundCRS", data.get("horizontalCRS")), data.get("compoundCRS", data.get("verticalDatum")))
-  metadata = SurveyMetadata(data["name"], None, None, None, None, None, data["purpose"], None, None, None, None)
+  annotations = [Annotation(ann.get("role"), ann.get("id"), ann["description"]) for ann in data.get("annotations", [])]
+  metadata = SurveyMetadata(data["name"], None, None, None, None, None, data["purpose"], None, None, None, annotations)
   
   instruments = []
   def instrument(*args):
@@ -20,7 +21,8 @@ def importCSDM(file):
     instruments.append(ret)
     return ret
 
-  referencedCSDs = [ReferencedCSD(ref["id"], ref["name"], ref["adminUnit"]["href"], ref["adminUnit"]["rel"], ref["adminUnit"]["role"], ref["bearingRotation"], ref["time"])]
+  referencedCSDs = [ReferencedCSD(ref["id"], ref["name"], ref["adminUnit"]["href"], ref["adminUnit"]["rel"], ref["adminUnit"]["role"], ref["bearingRotation"], ref["time"]) for ref in data["referencedCSDs"]]
+
   monuments = []
   points = []
   observations = []
@@ -230,6 +232,10 @@ def exportCSDM(data, file):
     # TODO: Capture data to transfer
     'links': [],
     'provenance': {},
+    'annotations': [{
+      'role': ann.type,
+      'description': ann.desc
+    } for ann in data.survey.metadata.annotations],
     'referencedCSDs': [{
         'id': ref.id,
         'name': ref.name,
