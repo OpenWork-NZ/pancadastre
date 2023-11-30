@@ -66,6 +66,14 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
         'featureType': 'observation',
         'coordinates': transform(obs, trans),
       }
+    elif isinstance(obs, SubtendedAngle):
+      return {
+        'type': "LineString",
+        'featureType': 'subtendedAngle',
+        coordinates: [transform(obs.targetSetup, trans),
+            transform(obs.setup, trans),
+            transform(obs.backsightSetup, trans)]
+      }
     else:
       print("Unexpected observation type!", type(obs))
   fileproj = data.projection.horizontal
