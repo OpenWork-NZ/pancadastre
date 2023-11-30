@@ -19,7 +19,8 @@ def importCSDM(file):
     ret = InstrumentSetup(*args)
     instruments.append(ret)
     return ret
-  
+
+  referencedCSDs = [ReferencedCSD(ref["id"], ref["name"], ref["adminUnit"]["href"], ref["adminUnit"]["rel"], ref["adminUnit"]["role"], ref["bearingRotation"], ref["time"])]
   monuments = []
   points = []
   observations = []
@@ -131,7 +132,7 @@ def importCSDM(file):
           for ref in geom["topology"]["references"]]))
       parcels.append(Parcel.fromProperties(None, None, geoms, geom["properties"], geom["id"], geom.get("featureType"))) # TODO: Differentiate primary vs secondary
     
-  return Cadastre(projection, {}, None, monuments, points, parcels, Survey(metadata, instruments, observationGroups))
+  return Cadastre(projection, {}, None, monuments, points, parcels, Survey(metadata, instruments, observationGroups), referencedCSDs = referencedCSDs)
 
 def exportCSDM(data, file):
   import json
@@ -229,7 +230,17 @@ def exportCSDM(data, file):
     # TODO: Capture data to transfer
     'links': [],
     'provenance': {},
-    'referencedCSDs': [], # TODO: Capture this data.
+    'referencedCSDs': [{
+        'id': ref.id,
+        'name': ref.name,
+        'adminUnit': {
+          'href': ref.href,
+          'rel': ref.rel,
+          'role': ref.role
+        },
+        'bearingRotation': ref.bearing,
+        'time': ref.time
+      } for ref in data.referencedCSDs],
     'points': [{
       'id': 'surveymarks',
       'type': 'FeatureCollection',

@@ -143,6 +143,17 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
     'id': getattr(data.survey.metadata, 'objID', None),
     'name': data.survey.metadata.name,
     'purpose': data.survey.metadata.purpose,
+    'referencedCSDs': [{
+        'id': ref.id,
+        'name': ref.name,
+        'adminUnit': {
+          'href': ref.href,
+          'rel': ref.rel,
+          'role': ref.role
+        },
+        'bearingRotation': ref.bearing,
+        'time': ref.time
+      } for ref in data.referencedCSDs],
     # TODO: Capture data to transfer
     'links': [],
     'provenance': {},

@@ -59,5 +59,11 @@ def exportSummary(data):
         ret += str(center.radius) + "\n"
       else:
         ret += "Unsupported observation type: " + repr(type(observation)) + "\n"
+  if len(data.referencedCSDs) > 0:
+    ret += "References:\t" + str(len(data.referencedCSDs)) + "\n"
+  for ref in data.referencedCSDs:
+    ret += "\t" + str(ref.name) + "\t" + str(ref.id) + "\t"
+    ret += str(ref.link) + " (" + str(ref.role) + ")\t" + str(ref.rel) + "\t"
+    ret += str(ref.rotation) + "\t" + str(ref.time) + "\n"
 
   return ret
