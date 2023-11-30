@@ -126,6 +126,8 @@ class Point:
   def div(self, other = 2):
     if other == 0: other = 1 # Ensure we don't crash!
     return Point(self.survey, self.name, self.state, self.coord1/other, self.coord2/other, (self.coord3 or 0)/other, str(self.objID) + "/" + str(other))
+  def offset1(self, offset1):
+    return Point(self.survey, self.name, self.state, self.coord1 + offset1, self.coord2, self.coord3, str(self.objID) + "+" + str(offset1))
 
 class Parcel:
   def __init__(self, name, area, type, state, klass, format, center, geom, titleDoc, address=None, desc = None, properties = None, oid = None):
@@ -183,6 +185,10 @@ class Geom:
 
 class Segment:
   pass
+
+class IDList(list, Segment):
+  def __init__(self):
+    self.id = ""
 
 class Line(Segment):
   def __init__(self, id, start, end, state = None):
@@ -568,4 +574,14 @@ class SubtendedAngle(Observation):
     self.setup = setup
     self.backsightSetup = backsight
     self.targetSetup = target
+    self.properties = properties
+
+class CircleByCenter(Observation):
+  def __init__(self, name, date, purpose, center, radius, properties = None):
+    properties = properties or {}
+    self.name = name
+    self.date = date
+    self.purpose = purpose or properties.get("purpose")
+    self.centerSetup = center
+    self.radius = radius
     self.properties = properties

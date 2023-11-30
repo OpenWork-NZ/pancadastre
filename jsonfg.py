@@ -71,10 +71,17 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
       return {
         'type': "LineString",
         'featureType': 'subtendedAngle',
-        coordinates: [transform(obs.targetSetup, trans),
-            transform(obs.setup, trans),
-            transform(obs.backsightSetup, trans)]
+        coordinates: [transform(obs.targetSetup.point, trans),
+            transform(obs.setup.point, trans),
+            transform(obs.backsightSetup.point, trans)]
       }
+    elif isinstance(obs, CircleWithCenter):
+      obs.properties["radius"] = obs.radius
+      return {
+        'type': "Point",
+        'featureType': 'circle',
+        'coordinates': transform(obs.centerSetup.point, trans)
+}
     else:
       print("Unexpected observation type!", type(obs))
   fileproj = data.projection.horizontal
@@ -166,9 +173,7 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
         'featureType': "sosa:ObservationCollection",
         'geometry': exportObs(observation, 'wgs84'),
         'place': exportObs(observation, fileproj),
-        'properties': {
-          # What goes here?
-        }
+        'properties': get(obs, 'properties', {})
       } for groupID, group in data.survey.observationGroups.items() for i, observation in enumerate(group)]
   }
   if file is not None: json.dump(ret, file, indent=4)

@@ -22,9 +22,6 @@ from reports import *
 #class ReducedVertPos(Observation) for 3D?
 
 ## Processors
-class IDList(list):
-  def __init__(self):
-    self.id = ""
 # NOTE: Only interpolates in 2D, not 3D.
 def interpCurves(data, delta):
   def inner(subdata):

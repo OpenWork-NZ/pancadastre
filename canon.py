@@ -102,11 +102,21 @@ def importCSDM(file):
         setup = pointsIndex[d(refs[0])]
         backsight = pointsIndex[d(refs[1])]
         target = pointsIndex[d(refs[2])]
-        obs = SubtendedAngle(observation["id"], start.get("time", data.get("time")), None, instrument(setup["id"], (setup["properties"].get("name") or {}).get("label", setup["id"])), instrument(backsight["id"], (backsight["properties"].get("name") or {}).get("label", backsight["id"])), instrument(target["id"], (target["properties"].get("name") or {}).get("label", target["id"])))
+        obs = SubtendedAngle(observation["id"], start.get("time", data.get("time")), None, instrument(setup["id"], (setup["properties"].get("name") or {}).get("label", setup["id"]), None, setup[""]), instrument(backsight["id"], (backsight["properties"].get("name") or {}).get("label", backsight["id"]), None, backsight[""]), instrument(target["id"], (target["properties"].get("name") or {}).get("label", target["id"]), None, target[""]), observation["properties"])
         observations.append(obs)
 
         geom = Line(observation["id"], setup[""], target[""])
         segments[observation["id"]] = geom
+      elif observation["topology"]["type"].lower() == "circlebycenter":
+        center = pointsIndex[d(observation["topology"]["references"])]
+        obs = CircleByCenter(observation["id"], start.get("time", data.get("time")), None, instrument(center["id"], (center["properties"].get("name") or {}).get("label", center["id"]), None, center[""]), observation["topology"]["radius"], observation["properties"])
+        observations.append(obs)
+
+        radius = observation["topology"]["radius"]
+        geoms = IDList([Curve.from_center(observation["id"] + "-cw", True, radius, center[""].offset1(-radius), center[""], center[""].offset1(radius)),
+          Curve.from_center(observation["id"] + "-ccw", False, radius, center[""].offset1(-radius), center[""], center[""].offset1(radius))])
+        geoms.id = observation["id"]
+        segments[observation["id"]] = geoms
       else:
         print("Unexpected observedVector topology-type: ", observation["topology"]["type"])
     observationGroups[group["id"]] = observations
