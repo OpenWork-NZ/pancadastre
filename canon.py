@@ -48,7 +48,7 @@ def importCSDM(file):
       pointsIndex[monument["id"]] = deepcopy(monument)
       pointsIndex[monument["id"]][""] = point
       # The observations will be initialized later
-      monuments.append(Monument((monument["properties"].get("name") or {}).get("label", monument["id"]), point, monumentedBy.get("state", monumentedBy.get("monumentState")), monumentedBy.get("form", monumentedBy.get("monumentForm")), monumentedBy.get("condition", monumentedBy.get("monumentCondition")), properties = monument["properties"]))
+      monuments.append(Monument((monument["properties"].get("name") or {}).get("label", monument["id"]), point, monumentedBy.get("state", monumentedBy.get("monumentState")), monumentedBy.get("form", monumentedBy.get("monumentForm")), monumentedBy.get("condition", monumentedBy.get("monumentCondition")), properties = monument["properties"], klass = monument.get("featureType")))
 
   def n(comment): return None # Indicates a TODO...
   def d(x):
@@ -68,7 +68,7 @@ def importCSDM(file):
           start = pointsIndex[d(observation["topology"]["references"][i-1])]
           end = pointsIndex[d(observation["topology"]["references"][i])]
           # Distance comes from vector observations, we might want to split that class out!
-          obs = ReducedObservation(None, instrument(start["id"], (start["properties"].get("name") or {}).get("label", start["id"]), None, start[""]), instrument(end["id"], (end["properties"].get("name") or {}).get("label", end["id"]), None, end[""]), measure.azimuth, measure.dist, measure.equipment, measure.distType, measure.azimuthType, observation["id"], start["time"], start["properties"], measure = measure)
+          obs = ReducedObservation(None, instrument(start["id"], (start["properties"].get("name") or {}).get("label", start["id"]), None, start[""]), instrument(end["id"], (end["properties"].get("name") or {}).get("label", end["id"]), None, end[""]), measure.azimuth, measure.dist, measure.equipment, measure.distType, measure.azimuthType, observation["id"], start.get("time", data.get("time")), start["properties"], measure = measure)
           observations.append(obs)
 
           geom = Line(observation["id"], start[""], end[""])
@@ -78,7 +78,7 @@ def importCSDM(file):
         mid = pointsIndex[d(observation["topology"]["references"][1])]
         end = pointsIndex[d(observation["topology"]["references"][2])]
         # Distance, radius, etc comes from vector observations.
-        obs = ReducedArcObservation(None, instrument(start["id"], (start["properties"].get("name") or {}).get("label", start["id"]), None, start[""]), instrument(end["id"], (end["properties"].get("name") or {}).get("label", end["id"]), None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start["time"], start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
+        obs = ReducedArcObservation(None, instrument(start["id"], (start["properties"].get("name") or {}).get("label", start["id"]), None, start[""]), instrument(end["id"], (end["properties"].get("name") or {}).get("label", end["id"]), None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start.get("time", data.get("time")), start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
         observations.append(obs)
 
         geom = Curve(observation["id"], measure.is_clockwise, measure.radius, start[""], mid[""], end[""])
@@ -90,13 +90,23 @@ def importCSDM(file):
         start = pointsIndex[d(observation["topology"]["references"][0])]
         end = pointsIndex[d(observation["topology"]["references"][1])]
         mid = pointsIndex[d(observation["topology"]["references"][2])]
-        obs = ReducedArcObservation(None, instrument(start["id"], (start["properties"].get("name") or {}).get("label", start["id"]), None, start[""]), instrument(end["id"], (end["properties"].get("name") or {}).get("label", end["id"]), None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start["time"], start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
+        obs = ReducedArcObservation(None, instrument(start["id"], (start["properties"].get("name") or {}).get("label", start["id"]), None, start[""]), instrument(end["id"], (end["properties"].get("name") or {}).get("label", end["id"]), None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start.get("time", data.get("time")), start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
         observations.append(obs)
 
         geom = Curve.from_center(observation["id"], measure.is_clockwise, measure.radius, start[""], mid[""], end[""])
         segments[observation["id"]] = geom
         obs.geom = geom
         obs.center = mid
+      elif observation["topology"]["type"].lower() == "subtendedangle":
+        refs = observation["topology"]["references"]
+        setup = pointsIndex[d(refs[0])]
+        backsight = pointsIndex[d(refs[1])]
+        target = pointsIndex[d(refs[2])]
+        obs = SubtendedAngle(observation["id"], start.get("time", data.get("time")), None, instrument(setup["id"], (setup["properties"].get("name") or {}).get("label", setup["id"])), instrument(backsight["id"], (backsight["properties"].get("name") or {}).get("label", backsight["id"])), instrument(target["id"], (target["properties"].get("name") or {}).get("label", target["id"])))
+        observations.append(obs)
+
+        geom = Line(observation["id"], setup[""], target[""])
+        segments[observation["id"]] = geom
       else:
         print("Unexpected observedVector topology-type: ", observation["topology"]["type"])
     observationGroups[group["id"]] = observations

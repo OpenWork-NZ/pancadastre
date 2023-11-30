@@ -35,14 +35,16 @@ class Unit:
     self.directionUnit = directionUnit
 
 class Monument:
-  def __init__(self, name, point, state, type, condition, properties = None, oid = None):
+  def __init__(self, name, point, state, type, condition, properties = None, oid = None, klass = None, geodeticID = None):
     self.name = name
     self.point = point
     self.state = state
     self.type = type
     self.condition = condition
     self.oid = oid
+    self.klass = klass
     self.properties_ = properties
+    self.geodeticID = geodeticID or (properties or {}).get("geodeticid")
     self.point.monuments.append(self)
     # Modelling remonumenting?
 
@@ -553,3 +555,14 @@ class RedHorizPos(Observation): # Spell out "Reduced"
     self.properties['angleQuality'] = self.angleQuality
     self.properties['distanceAccuracy'] = self.distanceAccuracy
     self.properties['angleAccuracy'] = self.angleAccuracy
+
+class SubtendedAngle(Observation):
+  def __init__(self, name, date, purpose, setup, backsight, target, properties = None):
+    properties = properties or {}
+    self.name = name
+    self.date = date
+    self.purpose = purpose or properties.get("purpose")
+    self.setup = setup
+    self.backsightSetup = backsight
+    self.targetSetup = target
+    self.properties = properties

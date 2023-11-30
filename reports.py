@@ -20,7 +20,7 @@ def exportSummary(data):
 
   ret += "Monuments:\t" + str(len(data.monuments)) + "\n"
   for monument in data.monuments or []:
-    ret += "\t" + str(monument.oid) + "\t" + str(monument.name) + "\t" + str(monument.point) + "\t" + str(monument.state) + "\t" + str(monument.condition) + "\n"
+    ret += "\t" + str(monument.oid) + "\t" + str(monument.name) + "\t" + str(monument.klass or "monument") + "\t" + str(monument.point) + "\t" + str(monument.state) + "\t" + str(monument.condition) + "\t" + str(monument.geodeticID) + "\n"
   # Since CSDM schema doesn't differentiate points from lines,
   # This is a reflection of LandXML.
 #  ret += "Points:\t" + str(len(data.points)) + "\n"
@@ -47,6 +47,12 @@ def exportSummary(data):
         ret += str(observation.chordAzimuth) + "\t" + str(observation.length) + "\t" + str(observation.radius) + "\n"
       elif isinstance(observation, RedHorizPos):
         ret += str(observation.coord1) + "," + str(observation.coord2) + "\n"
+      elif isinstance(observation, SubtendedAngle):
+        ret += str(observation.setup.stationName or observation.setup.id) + "\t"
+        backsight = observation.backsightSetup
+        ret += str(backsight.stationName or backsight.id) + "\t"
+        target = observation.targetSetup
+        ret += str(target.stationName or target.id) + "\n"
       else:
         ret += "Unsupported observation type: " + repr(type(observation)) + "\n"
 
