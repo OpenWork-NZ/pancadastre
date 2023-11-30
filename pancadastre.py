@@ -25,6 +25,7 @@ from reports import *
 class IDList(list):
   def __init__(self):
     self.id = ""
+# NOTE: Only interpolates in 2D, not 3D.
 def interpCurves(data, delta):
   def inner(subdata):
     for geom in subdata.geom:
@@ -79,10 +80,10 @@ def interpCurves(data, delta):
 
 def interpCurve(a, m, b):
   # See https://observablehq.com/@jrus/circle-arc-interpolation
-  b_m = b.easting - m.easting, b.northing - m.northing
-  m_a = m.easting - a.easting, m.northing - a.northing
-  ab_m = a.easting*b_m[0] - a.northing*b_m[1], a.easting*b_m[1] + a.northing*b_m[0]
-  bm_a = b.easting*m_a[0] - b.northing*m_a[1], b.easting*m_a[1] + b.northing*m_a[0]
+  b_m = b.coord1 - m.coord1, b.coord2 - m.coord2
+  m_a = m.coord1 - a.coord1, m.coord2 - a.coord2
+  ab_m = a.coord1*b_m[0] - a.coord2*b_m[1], a.coord1*b_m[1] + a.coord2*b_m[0]
+  bm_a = b.coord1*m_a[0] - b.coord2*m_a[1], b.coord1*m_a[1] + b.coord2*m_a[0]
 
   def inner(t):
     num = ab_m[0]*(1-t) + bm_a[0]*t, ab_m[1]*(1-t) + bm_a[1]*t

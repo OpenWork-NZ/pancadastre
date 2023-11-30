@@ -35,7 +35,7 @@ def importLandXML(file):
     if len(coords) != 2: continue
 
     point = Point(pointEl.get('pntSurv'), pointEl.get('name'), pointEl.get('state'), # difference in ePlan.
-                  coords[0], coords[1], pointEl.get('oID'))
+                  coords[0], coords[1], coords[2] if len(coords) >= 3 else None, pointEl.get('oID'))
     points.append(point)
     if pointEl.get('name'): pointsIndex[pointEl.get('name')] = point
 
@@ -319,7 +319,7 @@ def exportLandXML(data, file):
         })
       elif isinstance(observation, RedHorizPos):
         # FIXME: Find a reference!
-        ET.SubElement(groupL, "RedHorizontalPosition", {'desc': observation.desc, 'name': observation.name, 'oID': observation.objID, 'setupID': observation.setup.id, 'date': observation.date, 'horizontalDatum': observation.horizDatum, 'latitude': observation.northing, 'longitude': observation.longitude, 'horizontalFix': observation.horizFix, 'order': observation.order})
+        ET.SubElement(groupL, "RedHorizontalPosition", {'desc': observation.desc, 'name': observation.name, 'oID': observation.objID, 'setupID': observation.setup.id, 'date': observation.date, 'horizontalDatum': observation.horizDatum, 'latitude': observation.coord1, 'longitude': observation.coord2, 'horizontalFix': observation.horizFix, 'order': observation.order})
       else:
         raise Exception("Unsupported observation type! " + str(type(observation)))
 
@@ -335,7 +335,7 @@ def exportLandXML(data, file):
     ET.SubElement(cgpointsL, "CgPoint", {
         # surveyOrder?
         'name': point.name, 'pntSurv': point.survey, 'state': point.state, 'oID': point.objID
-    }).text = str(point.northing) + " " + str(point.easting)
+    }).text = str(point.coord1) + " " + str(point.coord2)
 
   def outputGeom(geoms):
     for geom in geoms:
@@ -361,7 +361,7 @@ def exportLandXML(data, file):
         # Store oIDs?
         'name': parcel.name, 'oID': id(parcel), 'area': parcel.area, 'parcelType': parcel.type, 'class': parcel.klass, 'state': parcel.state, 'parcelFormat': parcel.format, 'desc': parcel.desc
     })
-    ET.SubElement(parcelL, "Center").text = str(parcel.center.northing) + " " + str(parcel.center.easting)
+    ET.SubElement(parcelL, "Center").text = str(parcel.center.coord1) + " " + str(parcel.center.coord2)
     outputGeom(parcel.geom)
     if isinstance(parcel.titleDoc, dict):
       for titleName, titleType in parcel.titleDoc.items():

@@ -11,7 +11,7 @@ def importCSDM(file):
   
   data = json.load(file)
   assert data["type"] == "FeatureCollection"
-  projection = Projection(data.get("horizontalCRS"))
+  projection = Projection(data.get("compoundCRS", data.get("horizontalCRS")), data.get("compoundCRS", data.get("verticalDatum")))
   metadata = SurveyMetadata(data["name"], None, None, None, None, None, data["purpose"], None, None, None, None)
   
   instruments = []
@@ -43,7 +43,7 @@ def importCSDM(file):
           print("Outdated schema! Key 'monumentState' should be 'state'!")
         else:
           print("Invalid schema! Not attaching monument info!")
-      point = Point(None, None, monumentedBy.get("state", monumentedBy.get("monumentState")), monument["place"]["coordinates"][0], monument["place"]["coordinates"][1], monument["id"])
+      point = Point(None, None, monumentedBy.get("state", monumentedBy.get("monumentState")), monument["place"]["coordinates"][0], monument["place"]["coordinates"][1], monument["place"]["coordinates"][2] if len(monument["place"]["coordinates"]) >= 3 else None, monument["id"])
       points.append(point)
       pointsIndex[monument["id"]] = deepcopy(monument)
       pointsIndex[monument["id"]][""] = point
@@ -103,14 +103,13 @@ def importCSDM(file):
 
   parcels = []
   for parcel in data.get("parcels", []):
-    properties = None # I'm not particularly keen on how this bit is structured.
     for geom in parcel["features"]:
       isUID(geom["id"])
       geoms = []
       geoms.append(Geom(geom["id"],
         [segments.get(ref if isinstance(ref, str) else ref.get('$ref'))
           for ref in geom["topology"]["references"]]))
-      parcels.append(Parcel.fromProperties(None, None, geoms, geom["properties"], geom["id"])) # TODO: Differentiate primary vs secondary
+      parcels.append(Parcel.fromProperties(None, None, geoms, geom["properties"], geom["id"], geom.get("featureType"))) # TODO: Differentiate primary vs secondary
     
   return Cadastre(projection, {}, None, monuments, points, parcels, Survey(metadata, instruments, observationGroups))
 
@@ -222,7 +221,7 @@ def exportCSDM(data, file):
         'time': monument.point.date,
         'place': {
           'type': "Point",
-          'coordinates': [monument.point.northing, monument.point.easting] if monument.point is not None else []
+          'coordinates': [monument.point.coord1, monument.point.coord2] if monument.point is not None else []
         },
         'properties': monument.properties
       } for i, monument in enumerate(data.monuments)]

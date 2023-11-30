@@ -74,9 +74,9 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
   def transform(pt, transformer = trans):
     crs = transformer.target_crs
     if crs.name.lower().startswith("wgs 84"):
-      return list(reversed(transformer.transform(pt.northing, pt.easting)))
+      return list(reversed(transformer.transform(pt.coord1, pt.coord2)))
     else:
-      return list(transformer.transform(pt.northing, pt.easting))
+      return list(transformer.transform(pt.coord1, pt.coord2))
   lines = set()
   observedVecs = []
   for i, seg in enumerate(seg for parcel in data.parcels for geom in parcel.geom for seg in geom.segments):
@@ -140,7 +140,7 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
         },
         'place': {
           'type': "Point",
-          'coordinates': [monument.point.northing, monument.point.easting] if monument.point is not None else []
+          'coordinates': [monument.point.coord1, monument.point.coord2] if monument.point is not None else []
         },
         'properties': monument.properties
       } for i, monument in enumerate(data.monuments)] + observedVecs + [{

@@ -72,12 +72,13 @@ class Monument:
     }
 
 class Point:
-  def __init__(self, survey, name, state, northing, easting, objID = None):
+  def __init__(self, survey, name, state, coord1, coord2, coord3 = None, objID = None):
     self.survey = survey
     self.name = name
     self.state = state # State belongs on monument, not point?
-    self.northing = northing
-    self.easting = easting
+    self.coord1 = coord1
+    self.coord2 = coord2
+    self.coord3 = coord3
     self.objID = objID
     self.instruments = []
     self.monuments = []
@@ -99,26 +100,30 @@ class Point:
   def purpose(self): return self.observation.purpose if self.observation is not None else None
 
   def __iter__(self):
-    yield self.northing
-    yield self.easting
+    yield self.coord1
+    yield self.coord2
+    if self.coord3 is not None: yield self.coord3
 
   def __eq__(self, other):
 #    def isclose(x, y): # Handles both floating point & projection imprecision
 #      return int(floor(x/100)) == int(floor(x/100))
-    return isclose(self.northing, other.northing) and isclose(self.easting, other.easting)
+    return isclose(self.coord1, other.coord1) and isclose(self.coord2, other.coord2) and ((self.coord3 is None and other.coord3 is None) or isclose(self.coord3, other.coord3))
 
   def __str__(self):
-    return str(self.northing) + "," + str(self.easting)
+    return str(self.coord1) + "," + str(self.coord2) + (
+        "," + str(self.coord3) if coord3 is not None else "")
 
   def __repr__(self):
-    return repr(self.northing) + "," + repr(self.easting)
+    return repr(self.coord1) + "," + repr(self.coord2) + (
+        "," + repr(self.coord3) if coord3 is not None else "")
 
   def __add__(self, other):
-    return Point(self.survey, self.name, self.state, self.northing + other.northing, self.easting + other.easting, str(self.objID) + "+" + str(other.objID))
+    return Point(self.survey, self.name, self.state, self.coord1 + other.coord1, self.coord2 + other.coord2, (self.coord3 or 0) + (other.coord3 or 0), str(self.objID) + "+" + str(other.objID))
   def __sub__(self, other):
-    return Point(self.survey, self.name, self.state, self.northing - other.northing, self.easting - other.easting, str(self.objID) + "-" + str(other.objID))
+    return Point(self.survey, self.name, self.state, self.coord1 - other.coord1, self.coord2 - other.coord2, (self.coord3 or 0) - (other.coord3 or 0), str(self.objID) + "-" + str(other.objID))
   def div(self, other = 2):
-    return Point(self.survey, self.name, self.state, self.northing/other, self.easting/other, str(self.objID) + "/" + str(other))
+    if other == 0: other = 1 # Ensure we don't crash!
+    return Point(self.survey, self.name, self.state, self.coord1/other, self.coord2/other, (self.coord3 or 0)/other, str(self.objID) + "/" + str(other))
 
 class Parcel:
   def __init__(self, name, area, type, state, klass, format, center, geom, titleDoc, address=None, desc = None, properties = None, oid = None):
@@ -140,8 +145,8 @@ class Parcel:
     self.properties['label'] = name
 
   @staticmethod
-  def fromProperties(format, center, geom, properties, address = None, oid = None):
-    return Parcel(None, None, None, None, None, format, center, geom, None, address = address, properties = properties, oid = oid)
+  def fromProperties(format, center, geom, properties, address = None, oid = None, klass = None):
+    return Parcel(None, None, None, None, klass, format, center, geom, None, address = address, properties = properties, oid = oid)
 
   def populateProperties(self):
     self.properties['name'] = {'label': self.name, 'hasPart': []}
@@ -257,15 +262,15 @@ class Curve(Segment):
     if is_clockwise is None: is_clockwise = True # Better default?
     if r is None or isclose(r, 0):
       dist = center - start
-      r = sqrt(dist.northing*dist.northing + dist.easting*dist.easting)
+      r = sqrt(dist.coord1*dist.coord1 + dist.coord2*dist.coord2)
 
     a, b = (start, end) if is_clockwise else (end, start)
     ab = b - a
-    lab = sqrt(ab.easting*ab.easting + ab.northing*ab.northing)
+    lab = sqrt(ab.coord1*ab.coord1 + ab.coord2*ab.coord2)
     uab = ab.div(lab)
     mab = (a + b).div()
     f = r - sqrt(r*r - lab*lab/4)
-    mid = Point(center.survey, center.name, center.state, mab.northing + uab.easting*f, mab.easting - uab.northing*f, center.objID)
+    mid = Point(center.survey, center.name, center.state, mab.coord1 + uab.coord2*f, mab.coord2 - uab.coord1*f, center.objID)
     return Curve(id, is_clockwise, r, start, mid, end, state)
 
   @property
@@ -513,15 +518,15 @@ class ReducedArcObservation(Observation):
     self.properties['angleAccuracy'] = self.arcLengthAccuracy
 
 class RedHorizPos(Observation): # Spell out "Reduced"
-  def __init__(self, desc, name, objID, setup, date, horizDatum, northing, easting, horizFix, order, properties = None, distanceQuality = None, distanceAccuracy = None, angleQuality = None, angleAccuracy = None):
+  def __init__(self, desc, name, objID, setup, date, horizDatum, coord1, coord2, horizFix, order, properties = None, distanceQuality = None, distanceAccuracy = None, angleQuality = None, angleAccuracy = None):
     self.desc = desc
     self.name = name
     self.objID = objID
     self.setup = setup
     self.date = date
     self.horizDatum = horizDatum
-    self.northing = northing
-    self.easting = easting
+    self.coord1 = coord1
+    self.coord2 = coord2
     self.horizFix = horizFix
     self.order = order
     self.properties = properties or {}
@@ -540,7 +545,7 @@ class RedHorizPos(Observation): # Spell out "Reduced"
     self.properties['comment'] = self.desc
     self.properties['projection'] = self.horizDatum
     self.properties['horizontalFix'] = self.horizFix
-    self.properties['hasResult'] = {'coord': [self.northing, self.easting]}
+    self.properties['hasResult'] = {'coord': [self.coord1, self.coord2]}
     self.properties['distanceType'] = 'icsmdistancetype:ellipsoidal'
     self.properties['distanceProvenance'] = self.setup.point.state # Reformat?
     self.properties['order'] = self.order

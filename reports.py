@@ -28,14 +28,15 @@ def exportSummary(data):
 #    ret += "\t" + str(point.name or point.objID) + "\t" + str(point.state) + "\t" + str(point) + "\n"
   ret += "Parcels:\t" + str(len(data.parcels)) + "\n"
   for parcel in data.parcels or []:
-    ret += "\t" + str(parcel.oid) + "\t" + str(parcel.name) + "\t" + str(parcel.type) + "\t" + str(parcel.area) + "\t" + str(parcel.center) + "\t" + \
-        str(parcel.state) + "\t" + str(parcel.klass) + "\t" + str(parcel.desc) + "\n"
+    ret += "\t" + str(parcel.oid) + "\t" + str(parcel.name) + "\t" + \
+        str(parcel.type) + "\t" + str(parcel.area) + "\t" + \
+        str(parcel.state) + "\t" + str(parcel.klass) + "\t" + str(parcel.desc or "") + "\n"
   ret += "Observations:\t" + str(len([y for x in data.survey.observationGroups.values() for y in x])) + "\n"
   for label, observations in data.survey.observationGroups.items():
     ret += "\t\t" + label + "\n"
     for observation in observations:
       # TODO: Capture input's object IDs to echo here...
-      ret += "\t" + str(observation.name) + "\t" + str(observation.date) + "\t" + str(observation.purpose) + "\t"
+      ret += "\t" + str(observation.name) + "\t" + str(observation.date or "undated") + "\t" + str(observation.purpose) + "\t"
       if isinstance(observation, ReducedObservation):
         ret += str(observation.setup.stationName or observation.setup.id) + "\t"
         ret += str(observation.targetSetup.stationName or observation.targetSetup.id) + "\t"
@@ -45,7 +46,7 @@ def exportSummary(data):
         ret += str(observation.targetSetup.stationName or observation.targetSetup.id) + "\t"
         ret += str(observation.chordAzimuth) + "\t" + str(observation.length) + "\t" + str(observation.radius) + "\n"
       elif isinstance(observation, RedHorizPos):
-        ret += str(observation.northing) + "," + str(observation.easting) + "\n"
+        ret += str(observation.coord1) + "," + str(observation.coord2) + "\n"
       else:
         ret += "Unsupported observation type: " + repr(type(observation)) + "\n"
 
