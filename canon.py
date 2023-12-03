@@ -64,9 +64,9 @@ def importCSDM(file):
   for group in data["observedVectors"]:
     observations = []
     for observation in group["features"]:
-      isUID(observation["id"])
+      if "id" in observation: isUID(observation["id"])
       # FIXME: Is it a bug if a point doesn't have a measure? Should this be reported?
-      measure = measures.get(observation["id"]) or Measure.fromProperties({}, {})
+      measure = measures.get(observation.get("id")) or Measure.fromProperties({}, {})
       if observation["topology"]["type"].lower() == "linestring":
         for i in range(1, len(observation["topology"]["references"])):
           start = pointsIndex[d(observation["topology"]["references"][i-1])]
