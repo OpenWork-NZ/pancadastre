@@ -14,14 +14,13 @@ class Cadastre:
     self.referencedCSDs = referencedCSDs
 
 class ReferencedCSD:
-  def __init__(self, id, name, href, rel, role, bearing, rotation, time):
+  def __init__(self, id, name, href, rel, role, bearing, time):
     self.id = id
     self.name = name
     self.href = href
     self.rel = rel
     self.role = role
     self.bearing = bearing
-    self.rotation = rotation
     self.time = datetime.fromisoformat(time)
 
 class App:
