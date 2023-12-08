@@ -124,11 +124,11 @@ class Point:
 
   def __str__(self):
     return str(self.coord1) + "," + str(self.coord2) + (
-        "," + str(self.coord3) if coord3 is not None else "")
+        "," + str(self.coord3) if self.coord3 is not None else "")
 
   def __repr__(self):
     return repr(self.coord1) + "," + repr(self.coord2) + (
-        "," + repr(self.coord3) if coord3 is not None else "")
+        "," + repr(self.coord3) if self.coord3 is not None else "")
 
   def __add__(self, other):
     return Point(self.survey, self.name, self.state, self.coord1 + other.coord1, self.coord2 + other.coord2, (self.coord3 or 0) + (other.coord3 or 0), str(self.objID) + "+" + str(other.objID))
@@ -585,7 +585,7 @@ class SubtendedAngle(Observation):
     self.setupObs = setup
     self.backsightObs = backsight
     self.targetSetup = target
-    self.properties = properties
+    self.properties = properties or {}
 
   @property
   def setup(self):
@@ -593,6 +593,8 @@ class SubtendedAngle(Observation):
   @property
   def backsightSetup(self):
     return self.backsightObs.setup
+
+  def populateProperties(self): pass
 
 class CircleByCenter(Observation):
   def __init__(self, name, date, purpose, center, radius, properties = None):
@@ -602,4 +604,6 @@ class CircleByCenter(Observation):
     self.purpose = purpose or properties.get("purpose")
     self.centerSetup = center
     self.radius = radius
-    self.properties = properties
+    self.properties = properties or {}
+
+  def populateProperties(self): pass

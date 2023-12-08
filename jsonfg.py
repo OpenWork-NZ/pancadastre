@@ -5,6 +5,7 @@ import json
 # TODO: Tweak according to surveyfeatures.json, circular_arc.json
 def exportJSONfg(data, file = None, isGeoJSON = False):
   def simplifyPoly(trans, lines):
+    lines = [line for line in lines if line is not None]
     if len(lines) == 2:
       return [transform(lines[0].start, trans),
           transform(lines[0].end, trans), transform(lines[1].end, trans)]
@@ -71,11 +72,11 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
       return {
         'type': "LineString",
         'featureType': 'subtendedAngle',
-        coordinates: [transform(obs.targetSetup.point, trans),
+        'coordinates': [transform(obs.targetSetup.point, trans),
             transform(obs.setup.point, trans),
             transform(obs.backsightSetup.point, trans)]
       }
-    elif isinstance(obs, CircleWithCenter):
+    elif isinstance(obs, CircleByCenter):
       obs.properties["radius"] = obs.radius
       return {
         'type': "Point",
@@ -95,7 +96,8 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
       return list(transformer.transform(pt.coord1, pt.coord2))
   lines = set()
   observedVecs = []
-  for i, seg in enumerate(seg for parcel in data.parcels for geom in parcel.geom for seg in geom.segments):
+  for i, seg in enumerate(seg for parcel in data.parcels for geom in parcel.geom for seg in geom.segments if seg is not None):
+    if seg is None: pass
     if isinstance(seg, list):
       x = {
         'id': getattr(seg, "id", "curve" + str(i)),
@@ -152,7 +154,7 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
           'role': ref.role
         },
         'bearingRotation': ref.bearing,
-        'time': ref.time
+        'time': str(ref.time)
       } for ref in data.referencedCSDs],
     # TODO: Capture data to transfer
     'links': [],
@@ -184,7 +186,7 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
         'featureType': "sosa:ObservationCollection",
         'geometry': exportObs(observation, 'wgs84'),
         'place': exportObs(observation, fileproj),
-        'properties': get(obs, 'properties', {})
+        'properties': getattr(observation, 'properties', {})
       } for groupID, group in data.survey.observationGroups.items() for i, observation in enumerate(group)]
   }
   if file is not None: json.dump(ret, file, indent=4)

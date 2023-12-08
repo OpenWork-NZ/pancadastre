@@ -21,7 +21,7 @@ def importCSDM(file):
     instruments.append(ret)
     return ret
 
-  referencedCSDs = [ReferencedCSD(ref["id"], ref["name"], ref["adminUnit"]["href"], ref["adminUnit"]["rel"], ref["adminUnit"]["role"], ref["bearingRotation"], ref["time"]) for ref in data["referencedCSDs"]]
+  referencedCSDs = [ReferencedCSD(ref["id"], ref["name"], ref.get("adminUnit", {}).get("href"), ref.get("adminUnit", {}).get("rel"), ref.get("adminUnit", {}).get("role"), ref["bearingRotation"], ref["time"]) for ref in data["referencedCSDs"]]
 
   monuments = []
   points = []
@@ -46,7 +46,8 @@ def importCSDM(file):
           print("Outdated schema! Key 'monumentState' should be 'state'!")
         else:
           print("Invalid schema! Not attaching monument info!")
-      point = Point(None, None, monumentedBy.get("state", monumentedBy.get("monumentState")), monument["place"]["coordinates"][0], monument["place"]["coordinates"][1], monument["place"]["coordinates"][2] if len(monument["place"]["coordinates"]) >= 3 else None, monument["id"])
+      place = monument.get("place", monument.get("topology", monument.get("geometry"))) # "geometry" doesn't seem right here...
+      point = Point(None, None, monumentedBy.get("state", monumentedBy.get("monumentState")), place["coordinates"][0], place["coordinates"][1], place["coordinates"][2] if len(place["coordinates"]) >= 3 else None, monument["id"])
       points.append(point)
       pointsIndex[monument["id"]] = deepcopy(monument)
       pointsIndex[monument["id"]][""] = point
@@ -108,14 +109,15 @@ def importCSDM(file):
         # Handle in a separate pass...
         pass
       elif observation["topology"]["type"].lower() == "circlebycenter":
-        center = pointsIndex[d(observation["topology"]["references"])]
-        obs = CircleByCenter(observation["id"], start.get("time", data.get("time")), None, instrument(center["id"], (center["properties"].get("name") or {}).get("label", center["id"]), None, center[""]), observation["topology"]["radius"], observation["properties"])
+        center = pointsIndex[d(observation["topology"]["references"][0])]
+        obs = CircleByCenter(observation["id"], center.get("time", data.get("time")), None, instrument(center["id"], (center["properties"].get("name") or {}).get("label", center["id"]), None, center[""]), observation["topology"]["radius"], observation["properties"])
         observations.append(obs)
         observationsIndex[observation["id"]] = obs
 
         radius = observation["topology"]["radius"]
-        geoms = IDList([Curve.from_center(observation["id"] + "-cw", True, radius, center[""].offset1(-radius), center[""], center[""].offset1(radius)),
-          Curve.from_center(observation["id"] + "-ccw", False, radius, center[""].offset1(-radius), center[""], center[""].offset1(radius))])
+        geoms = IDList()
+        geoms.append(Curve.from_center(observation["id"] + "-cw", True, radius, center[""].offset1(-radius), center[""], center[""].offset1(radius)))
+        geoms.append(Curve.from_center(observation["id"] + "-ccw", False, radius, center[""].offset1(-radius), center[""], center[""].offset1(radius)))
         geoms.id = observation["id"]
         segments[observation["id"]] = geoms
       else:
