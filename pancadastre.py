@@ -166,6 +166,7 @@ if __name__ == "__main__":
       print("Unresolvable link!", err)
     except Exception as err:
       print(err)
+      raise err
     read_input = True
   for source in args.CSDM or []:
     redirect_errors(source)
@@ -175,6 +176,7 @@ if __name__ == "__main__":
       print("Unresolvable link or missing property!", err)
     except Exception as err:
       print(err)
+      raise err
     read_input = True
   for source in args.WA or []:
     redirect_errors(source)
@@ -184,6 +186,7 @@ if __name__ == "__main__":
       print("Unresolvable link!", err)
     except Exception as err:
       print(err)
+      raise err
     read_input = True
 
   if not read_input:
