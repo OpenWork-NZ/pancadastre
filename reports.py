@@ -56,7 +56,7 @@ def exportSummary(data):
       elif isinstance(observation, CircleByCenter):
         center = observation.centerSetup
         ret += str(center.stationName or center.id) + "\t"
-        ret += str(center.radius) + "\n"
+        ret += str(observation.radius) + "\n"
       else:
         ret += "Unsupported observation type: " + repr(type(observation)) + "\n"
   if len(data.survey.metadata.annotations) > 0:
