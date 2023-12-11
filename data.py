@@ -144,7 +144,10 @@ class Parcel:
   def __init__(self, name, area, type, state, klass, format, center, geom, titleDoc, address=None, desc = None, properties = None, oid = None):
     props = properties or {}
     self.oid = oid or id(self)
-    self.name = name or props.get('name', {}).get('label')
+    if isinstance(props.get('name'), str):
+      self.name = props["name"]
+    else:
+      self.name = name or props.get('name', {}).get('label')
     self.area = area or props.get('area')
     self.type = type or props.get('parcelType')
     self.state = state or props.get('state')

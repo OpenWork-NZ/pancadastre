@@ -138,10 +138,10 @@ def importCSDM(file):
     for geom in parcel["features"]:
       isUID(geom["id"])
       geoms = []
-      print("DEBUG:", geom["topology"]["references"])
+      refs = geom["topology"]["references"]
+      if len(refs) == 1 and isinstance(refs[0], list): refs = refs[0] # Handle double-nesting.
       geoms.append(Geom(geom["id"],
-        [segments.get(ref if isinstance(ref, str) else (ref[0] if isinstance(ref, list) else ref.get('$ref')))
-          for ref in geom["topology"]["references"]]))
+        [segments.get(ref if isinstance(ref, str) else ref.get('$ref')) for ref in refs]))
       parcels.append(Parcel.fromProperties(None, None, geoms, geom["properties"], geom["id"], geom.get("featureType"))) # TODO: Differentiate primary vs secondary
     
   return Cadastre(projection, {}, None, monuments, points, parcels, Survey(metadata, instruments, observationGroups), referencedCSDs = referencedCSDs)
