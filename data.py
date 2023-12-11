@@ -85,6 +85,8 @@ class Monument:
     }
 
 class Point:
+  counter = 0
+
   def __init__(self, survey, name, state, coord1, coord2, coord3 = None, objID = None):
     self.survey = survey
     self.name = name
@@ -93,6 +95,9 @@ class Point:
     self.coord2 = coord2
     self.coord3 = coord3
     self.objID = objID
+    if self.objID is None:
+      self.objID = counter
+      Point.counter += 1
     self.instruments = []
     self.monuments = []
     self.segments = []
@@ -118,9 +123,7 @@ class Point:
     if self.coord3 is not None: yield self.coord3
 
   def __eq__(self, other):
-#    def isclose(x, y): # Handles both floating point & projection imprecision
-#      return int(floor(x/100)) == int(floor(x/100))
-    return isclose(self.coord1, other.coord1) and isclose(self.coord2, other.coord2) and ((self.coord3 is None and other.coord3 is None) or isclose(self.coord3, other.coord3))
+    return self.objID == other.objID
 
   def __str__(self):
     return str(self.coord1) + "," + str(self.coord2) + (
