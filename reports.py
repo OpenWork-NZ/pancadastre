@@ -74,6 +74,6 @@ def exportSummary(data):
   for ref in data.referencedCSDs:
     ret += "\t" + str(ref.name) + "\t" + str(ref.id) + "\t"
     ret += str(ref.href) + " (" + str(ref.role) + ")\t" + str(ref.rel) + "\t"
-    ret += str(ref.rotation) + "\t" + str(ref.time) + "\n"
+    ret += str(ref.bearing) + "\t" + str(ref.time) + "\n"
 
   return ret
