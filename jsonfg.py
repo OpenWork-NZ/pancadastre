@@ -122,6 +122,7 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
       x = {
         'id': seg.id or i,
         'type': "Feature",
+        'featureType': "boundry",
         # Is this the VectorPurpose value?
         'featureType': 'boundary', # FIXME: This will need to support other feature types. What's the logic here?
         'geometry': {
@@ -175,7 +176,7 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
       } for i, monument in enumerate(data.monuments)] + observedVecs + [{
         'type': 'Feature',
         'id': parcel.oid or i,
-        'featureType': 'boundary',
+        'featureType': 'parcel',
         'links': [],
         'time': '', # Appears to be missing from LandXML
         'geometry': exportGeom(parcel, 'wgs84'),
