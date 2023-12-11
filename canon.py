@@ -138,8 +138,9 @@ def importCSDM(file):
     for geom in parcel["features"]:
       isUID(geom["id"])
       geoms = []
+      print("DEBUG:", geom["topology"]["references"])
       geoms.append(Geom(geom["id"],
-        [segments.get(ref if isinstance(ref, str) else ref.get('$ref'))
+        [segments.get(ref if isinstance(ref, str) else (ref[0] if isinstance(ref, list) else ref.get('$ref')))
           for ref in geom["topology"]["references"]]))
       parcels.append(Parcel.fromProperties(None, None, geoms, geom["properties"], geom["id"], geom.get("featureType"))) # TODO: Differentiate primary vs secondary
     
