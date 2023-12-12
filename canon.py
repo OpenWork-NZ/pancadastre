@@ -78,7 +78,7 @@ def importCSDM(file):
           observationsIndex[observation["id"]] = obs
 
           geom = Line(observation["id"], start[""], end[""])
-          segments[observation["id"]] = geom
+          segments[observation["id"]] = [geom]
       elif observation["topology"]["type"].lower() == "arc":
         start = pointsIndex[d(observation["topology"]["references"][0])]
         mid = pointsIndex[d(observation["topology"]["references"][1])]
@@ -89,7 +89,7 @@ def importCSDM(file):
         observationsIndex[observation["id"]] = obs
 
         geom = Curve(observation["id"], measure.is_clockwise, measure.radius, start[""], mid[""], end[""])
-        segments[observation["id"]] = geom
+        segments[observation["id"]] = [geom]
         obs.geom = geom
         obs.mid = mid
       elif observation["topology"]["type"].lower() == "arcwithcenter":
@@ -102,7 +102,7 @@ def importCSDM(file):
         observationsIndex[observation["id"]] = obs
 
         geom = Curve.from_center(observation["id"], measure.is_clockwise, measure.radius, start[""], mid[""], end[""])
-        segments[observation["id"]] = geom
+        segments[observation["id"]] = [geom]
         obs.geom = geom
         obs.center = mid
       elif observation["topology"]["type"].lower() == "subtendedangle":
@@ -115,10 +115,9 @@ def importCSDM(file):
         observationsIndex[observation["id"]] = obs
 
         radius = observation["topology"]["radius"]
-        geoms = IDList()
+        geoms = []
         geoms.append(Curve.from_center(observation["id"] + "-cw", True, radius, center[""].offset1(-radius), center[""], center[""].offset1(radius)))
         geoms.append(Curve.from_center(observation["id"] + "-ccw", False, radius, center[""].offset1(-radius), center[""], center[""].offset1(radius)))
-        geoms.id = observation["id"]
         segments[observation["id"]] = geoms
       else:
         print("Unexpected observedVector topology-type: ", observation["topology"]["type"])
@@ -141,7 +140,7 @@ def importCSDM(file):
       refs = geom["topology"]["references"]
       if len(refs) == 1 and isinstance(refs[0], list): refs = refs[0] # Handle double-nesting.
       geoms.append(Geom(geom["id"],
-        [segments.get(ref if isinstance(ref, str) else ref.get('$ref')) for ref in refs]))
+        [segment for ref in refs for segment in segments.get(ref if isinstance(ref, str) else ref.get('$ref'))]))
       parcels.append(Parcel.fromProperties(None, None, geoms, geom["properties"], geom["id"], geom.get("featureType"))) # TODO: Differentiate primary vs secondary
     
   return Cadastre(projection, {}, None, monuments, points, parcels, Survey(metadata, instruments, observationGroups), referencedCSDs = referencedCSDs)

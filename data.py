@@ -140,6 +140,8 @@ class Point:
     return Point(self.survey, self.name, self.state, self.coord1/other, self.coord2/other, (self.coord3 or 0)/other, str(self.objID) + "/" + str(other))
   def offset1(self, offset1):
     return Point(self.survey, self.name, self.state, self.coord1 + offset1, self.coord2, self.coord3, str(self.objID) + "+" + str(offset1))
+  def offset2(self, offset2):
+    return Point(self.survey, self.name, self.state, self.coord1, self.coord2 + offset2, self.coord3, str(self.objID) + "++" + str(offset2))
 
 class Parcel:
   def __init__(self, name, area, type, state, klass, format, center, geom, titleDoc, address=None, desc = None, properties = None, oid = None):
@@ -281,6 +283,7 @@ class Curve(Segment):
 
   @staticmethod
   def from_center(id, is_clockwise, r, start, center, end, state = None):
+    # NOTE: There's a bug here... I'm not sure how to debug...
     # Handle missing inputs
     if is_clockwise is None: is_clockwise = True # Better default?
     if r is None or isclose(r, 0):
@@ -293,7 +296,7 @@ class Curve(Segment):
     uab = ab.div(lab)
     mab = (a + b).div()
     f = r - sqrt(r*r - lab*lab/4)
-    mid = Point(center.survey, center.name, center.state, mab.coord1 + uab.coord2*f, mab.coord2 - uab.coord1*f, center.objID)
+    mid = Point(center.survey, center.name, center.state, mab.coord1 + uab.coord2*f, mab.coord2 - uab.coord1*f, None, center.objID)
     return Curve(id, is_clockwise, r, start, mid, end, state)
 
   @property
