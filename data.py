@@ -116,6 +116,8 @@ class Point:
   def date(self): return self.observation.date if self.observation is not None else None
   @property
   def purpose(self): return self.observation.purpose if self.observation is not None else None
+  @property
+  def setup(self): return InstrumentSetup(None, None, 0, self) # Work-around for loosy-goosy datamodelling.
 
   def __iter__(self):
     yield self.coord1
@@ -315,6 +317,19 @@ class Curve(Segment):
   def __hash__(self): return hash(self.id)
   def __eq__(self, other): return self.id == other.id
 
+class Cubic(Segment):
+  def __init__(self, id, startTangent, endTangent, controlPoints):
+    self.id = id
+    self.startTangent = startTangent
+    self.endTangent = endTangent
+    self.controlPoints = controlPoints
+    self.properties = properties
+
+  @property
+  def start(self): return self.startTangent[0]
+  @property
+  def end(self): return self.endTangent[-1]
+
 class Feature:
   def __init__(self, desc, name, geom, properties = {}):
     self.desc = desc
@@ -462,6 +477,10 @@ class ReducedObservation(Observation):
     for segment in self.setupPoint.segments:
       if self.setupPoint == segment.start and self.targetPoint == segment.end: return segment
       if self.targetPoint == segment.start and self.setupPoint == segment.end: return segment
+
+  @property
+  def point(self):
+    return self.setup.point
 
   def populateProperties(self):
     # Start leaving hasPart blank...
@@ -614,3 +633,29 @@ class CircleByCenter(Observation):
     self.properties = properties or {}
 
   def populateProperties(self): pass
+
+class CubicSplineObservation(Observation):
+  counter = 0
+  def __init__(self, name, startTangent, endTangent, controlPoints, properties = None):
+    self.name = name
+    if self.name is None:
+      self.name = "cs" + str(CubicSplineObservation.counter)
+      CubicSplineObservation.counter += 1
+    self.startTangent = startTangent
+    self.endTangent = endTangent
+    self.controlPoints = controlPoints
+    self.properties = properties or {}
+
+  def populateProperties(self): pass
+  
+  def interpolatedPath(self):
+    import numpy as np
+    from scipy.interpolate import CubicSpline
+
+    points = self.startTangent + self.controlPoints + self.endTangent # Is this right?
+    x = np.array([pt.coord1 for pt in points])
+    y = np.array([pt.coord2 for pt in points])
+    cs = CubicSpline(x, y)
+    x_new = np.linspace(min(x), max(x), 200)
+    y_new = cs(x_new)
+    return [Point(None, None, None, x_, y_, None, self.name + '-' + str(i)) for i, x_, y_ in enumerate(zip(x_new, y_new))]

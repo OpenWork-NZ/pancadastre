@@ -82,7 +82,13 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
         'type': "Point",
         'featureType': 'circle',
         'coordinates': transform(obs.centerSetup.point, trans)
-}
+      }
+    elif isinstance(obs, CubicSplineObservation):
+      return {
+        'type': "LineString",
+        'featureType': 'cubicSpline',
+        'coordinates': [transform(pt, trans) for pt in obs.interpolatedPath()]
+      }
     else:
       print("Unexpected observation type!", type(obs))
   fileproj = data.projection.horizontal

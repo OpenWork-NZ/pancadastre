@@ -119,6 +119,18 @@ def importCSDM(file):
         geoms.append(Curve.from_center(observation["id"] + "-cw", True, radius, center[""].offset1(-radius), center[""], center[""].offset1(radius)))
         geoms.append(Curve.from_center(observation["id"] + "-ccw", False, radius, center[""].offset1(-radius), center[""], center[""].offset1(radius)))
         segments[observation["id"]] = geoms
+      elif observation["topology"]["type"].lower() == "cubicspline":
+        def refs(feat):
+          return [pointsIndex[d(pt)][""] for pt in feat["references"]]
+        obsId = observation.get("id")
+        topology = observation["topology"]
+        obs = CubicSplineObservation(obsId, refs(topology["startTangentVector"]), refs(topology["endTangentVector"]), refs(topology), observation["properties"])
+        observations.append(obs)
+
+        if obsId is not None:
+          observationsIndex[obsId] = obs
+          geom = Cubic(obsId, refs(topology["startTangentVector"]), refs(topology["endTangentVector"]), refs(topology))
+          segments[obsId] = [geoms]
       else:
         print("Unexpected observedVector topology-type: ", observation["topology"]["type"])
     observationGroups[group["id"]] = observations
@@ -126,10 +138,14 @@ def importCSDM(file):
     for observation in group["features"]:
       if observation["topology"]["type"].lower() == "subtendedangle":
         refs = observation["topology"]["references"]
-        setup = observationsIndex[d(refs[0])]
+        setup = observationsIndex.get(d(refs[0]), pointsIndex.get(d(refs[0])))
+        if setup is None: print("Warning: Failed to dereference subtended angle setup as either point or observation!")
+        elif isinstance(setup, dict): setup = setup[""]
         backsight = observationsIndex[d(refs[1])]
-        target = pointsIndex[d(refs[2])]
-        obs = SubtendedAngle(observation["id"], start.get("time", data.get("time")), None, setup, backsight, instrument(target["id"], (target["properties"].get("name") or {}).get("label", target["id"]), None, target[""]), observation["properties"])
+        target = observationsIndex.get(d(refs[2]), pointsIndex.get(d(refs[2])))
+        if target is None: print("Warning: Failed to dereference subtended angle target as either point or observation!")
+        elif isinstance(target, dict): target = target[""]
+        obs = SubtendedAngle(observation["id"], start.get("time", data.get("time")), None, setup, backsight, target, observation["properties"])
         observationGroups[group["id"]].append(obs)
 
   parcels = []
@@ -140,7 +156,7 @@ def importCSDM(file):
       refs = geom["topology"]["references"]
       if len(refs) == 1 and isinstance(refs[0], list): refs = refs[0] # Handle double-nesting.
       geoms.append(Geom(geom["id"],
-        [segment for ref in refs for segment in segments.get(ref if isinstance(ref, str) else ref.get('$ref'))]))
+        [segment for ref in refs for segment in segments.get(ref if isinstance(ref, str) else ref.get('$ref'), [])]))
       parcels.append(Parcel.fromProperties(None, None, geoms, geom["properties"], geom["id"], geom.get("featureType"))) # TODO: Differentiate primary vs secondary
     
   return Cadastre(projection, {}, None, monuments, points, parcels, Survey(metadata, instruments, observationGroups), referencedCSDs = referencedCSDs)
