@@ -43,7 +43,7 @@ def interpCurves(data, delta):
         prev = interp(0)
         for t in range(subdivisions):
           end = interp((t+1)/subdivisions)
-          subsegs.append(Line(t, Point(None, None, None, prev[0], prev[1]), Point(None, None, None, end[0], end[1])))
+          subsegs.append(Line(t, Point(None, None, None, prev[0], prev[1], None, segment.id + '+' + str(t)), Point(None, None, None, end[0], end[1], None, segment.id + '+' + str(t+1))))
           prev = end
         subsegs.id = segment.id # Attach extra property to preserve original ID.
         segments.append(subsegs)
