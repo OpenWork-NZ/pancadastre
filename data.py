@@ -96,7 +96,7 @@ class Point:
     self.coord3 = coord3
     self.objID = objID
     if self.objID is None:
-      self.objID = counter
+      self.objID = Point.counter
       Point.counter += 1
     self.instruments = []
     self.monuments = []
@@ -126,12 +126,10 @@ class Point:
     return self.objID == other.objID
 
   def __str__(self):
-    return str(self.coord1) + "," + str(self.coord2) + (
-        "," + str(self.coord3) if self.coord3 is not None else "")
+    return repr(self.objID)
 
   def __repr__(self):
-    return repr(self.coord1) + "," + repr(self.coord2) + (
-        "," + repr(self.coord3) if self.coord3 is not None else "")
+    return repr(self.objID)
 
   def __add__(self, other):
     return Point(self.survey, self.name, self.state, self.coord1 + other.coord1, self.coord2 + other.coord2, (self.coord3 or 0) + (other.coord3 or 0), str(self.objID) + "+" + str(other.objID))
