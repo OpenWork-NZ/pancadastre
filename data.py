@@ -602,14 +602,14 @@ class SubtendedAngle(Observation):
     self.name = name
     self.date = date
     self.purpose = purpose or properties.get("purpose")
-    self.setupObs = setup
+    self.setupPt = setup
     self.backsightObs = backsight
     self.targetSetup = target
     self.properties = properties or {}
 
   @property
   def setup(self):
-    return self.setupObs.setup
+    return InstrumentSetup(None, None, 0, self.setupPt)
   @property
   def backsightSetup(self):
     return self.backsightObs.setup

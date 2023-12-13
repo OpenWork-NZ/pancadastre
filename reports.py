@@ -48,7 +48,7 @@ def exportSummary(data):
       elif isinstance(observation, RedHorizPos):
         ret += str(observation.coord1) + "," + str(observation.coord2) + "\n"
       elif isinstance(observation, SubtendedAngle):
-        ret += str(observation.setup) + "\t"
+        ret += str(observation.setupPt) + "\t"
         backsight = observation.backsightSetup
         ret += str(backsight.stationName or backsight.id) + "\t"
         target = observation.targetSetup

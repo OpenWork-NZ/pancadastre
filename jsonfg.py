@@ -72,7 +72,7 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
       return {
         'type': "Point",
         'featureType': 'subtendedAngle',
-        'coordinates': transform(obs.setup, trans)
+        'coordinates': transform(obs.setupPt, trans)
       }
     elif isinstance(obs, CircleByCenter):
       obs.properties["radius"] = obs.radius
