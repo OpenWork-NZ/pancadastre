@@ -85,7 +85,7 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
       return {
         'type': "LineString",
         'featureType': 'cubicSpline',
-        'coordinates': [] # [transform(pt, trans) for pt in obs.interpolatedPath()]
+        'coordinates': [transform(pt, trans) for pt in obs.interpolatedPath()]
       }
     else:
       print("Unexpected observation type!", type(obs))

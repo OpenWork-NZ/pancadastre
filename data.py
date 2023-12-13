@@ -318,8 +318,11 @@ class Curve(Segment):
 class Cubic(Segment):
   def __init__(self, id, startTangent, endTangent, controlPoints):
     self.id = id
+    assert len(startTangent) == 2 or startTangent is None
     self.startTangent = startTangent
+    assert len(endTangent) == 2 or endTangent is None
     self.endTangent = endTangent
+    assert len(controlPoints) >= 3
     self.controlPoints = controlPoints
     self.properties = properties
 
@@ -635,21 +638,23 @@ class CubicSplineObservation(Observation):
     if self.name is None:
       self.name = "cs" + str(CubicSplineObservation.counter)
       CubicSplineObservation.counter += 1
+    assert len(startTangent) == 2
     self.startTangent = startTangent
+    assert len(endTangent) == 2
     self.endTangent = endTangent
+    assert len(controlPoints) >= 3
     self.controlPoints = controlPoints
     self.properties = properties or {}
 
   def populateProperties(self): pass
   
-  def interpolatedPath(self):
+  def interpolatedPath(self, interval=1):
     import numpy as np
-    from scipy.interpolate import CubicSpline
+    from scipy import interpolate
 
-    points = self.startTangent + self.controlPoints + self.endTangent # Is this right?
-    x = np.array([pt.coord1 for pt in points])
-    y = np.array([pt.coord2 for pt in points])
-    cs = CubicSpline(x, y)
-    x_new = np.linspace(min(x), max(x), 200)
-    y_new = cs(x_new)
-    return [Point(None, None, None, x_, y_, None, self.name + '-' + str(i)) for i, x_, y_ in enumerate(zip(x_new, y_new))]
+    points = np.array(map(list, self.controlPoints))
+    tck, u = interpolate.splprep(points.transpose(), s=0)
+    unew = np.arange(min(pt[0] for pt in points), max(pt[0] for pt in points), interval)
+    out = interpolate.splev(unew, tck)
+
+    return [Point(None, None, None, pt[0], pt[1], pt[3] if len(pt) >= 3 else None, self.name + '-' + str(i)) for i, pt in enumerate(out)]
