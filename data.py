@@ -331,6 +331,9 @@ class Cubic(Segment):
   @property
   def end(self): return self.controlPoints[-1]
 
+  def asObs(self):
+    return CubicSplineObservation(self.id, self.startTangent, self.endTangent, self.controlPoints, self.properties)
+
 class Feature:
   def __init__(self, desc, name, geom, properties = {}):
     self.desc = desc

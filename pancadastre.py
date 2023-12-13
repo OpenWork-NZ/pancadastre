@@ -28,7 +28,15 @@ def interpCurves(data, delta):
     for geom in subdata.geom:
       segments = []
       for segment in geom.segments:
-        if not isinstance(segment, Curve):
+        if isinstance(segment, Cubic):
+          points = segment.asObs().interpolatedPath()
+          subsegs = IDList()
+          for i in range(1, len(points)):
+            subsegs.append(Line(segment.id + str(i), points[i-1], points[i]))
+          subsegs.id = segment.id
+          segments.append(subsegs)
+          continue
+        elif not isinstance(segment, Curve):
           segments.append(segment)
           continue
         interp = interpCurve(segment.start, segment.mid, segment.end)

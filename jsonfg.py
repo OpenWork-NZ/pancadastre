@@ -120,6 +120,21 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
           'comment': ""
         }
       }
+    elif isinstance(seg, Cubic):
+      x = {
+        'id': getattr(seg, "id", "cubic" + str(i)),
+        'type': "Feature",
+        'featureType': 'boundary',
+        'geometry': {
+          'type': "LineString",
+          'coordinates': [transform(pt) for pt in seg.asObs().interpolatedPath()]
+        },
+        'place': {
+          'type': "LineString",
+          'coordinates': [list(pt) for pt in seg.asObs().interpolatedPath()]
+        },
+        'properties': seg.properties
+      }
     else:
       if seg in lines: continue
       lines.add(seg)
