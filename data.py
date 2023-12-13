@@ -116,8 +116,6 @@ class Point:
   def date(self): return self.observation.date if self.observation is not None else None
   @property
   def purpose(self): return self.observation.purpose if self.observation is not None else None
-  @property
-  def setup(self): return InstrumentSetup(None, None, 0, self) # Work-around for loosy-goosy datamodelling.
 
   def __iter__(self):
     yield self.coord1
@@ -477,10 +475,6 @@ class ReducedObservation(Observation):
     for segment in self.setupPoint.segments:
       if self.setupPoint == segment.start and self.targetPoint == segment.end: return segment
       if self.targetPoint == segment.start and self.setupPoint == segment.end: return segment
-
-  @property
-  def point(self):
-    return self.setup.point
 
   def populateProperties(self):
     # Start leaving hasPart blank...

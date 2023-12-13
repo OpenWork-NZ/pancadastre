@@ -70,11 +70,9 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
       }
     elif isinstance(obs, SubtendedAngle):
       return {
-        'type': "LineString",
+        'type': "Point",
         'featureType': 'subtendedAngle',
-        'coordinates': [transform(obs.targetSetup.point, trans),
-            transform(obs.setup.point, trans),
-            transform(obs.backsightSetup.point, trans)]
+        'coordinates': transform(obs.setup, trans)
       }
     elif isinstance(obs, CircleByCenter):
       obs.properties["radius"] = obs.radius
@@ -87,7 +85,7 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
       return {
         'type': "LineString",
         'featureType': 'cubicSpline',
-        'coordinates': [transform(pt, trans) for pt in obs.interpolatedPath()]
+        'coordinates': [] # [transform(pt, trans) for pt in obs.interpolatedPath()]
       }
     else:
       print("Unexpected observation type!", type(obs))

@@ -138,13 +138,15 @@ def importCSDM(file):
     for observation in group["features"]:
       if observation["topology"]["type"].lower() == "subtendedangle":
         refs = observation["topology"]["references"]
-        setup = observationsIndex.get(d(refs[0]), pointsIndex.get(d(refs[0])))
-        if setup is None: print("Warning: Failed to dereference subtended angle setup as either point or observation!")
-        elif isinstance(setup, dict): setup = setup[""]
+        if d(refs[0]) in observationsIndex and d(refs[0]) not in pointsIndex:
+          print("WARNING! Subtended angle setup referencing an observation instead of point!")
+        setup = pointsIndex[d(refs[0])][""]
+        if d(refs[1]) in pointsIndex and d(refs[1]) not in observationsIndex:
+          print("WARNING! Subtended angle backsight line references a point instead of an observation!")
         backsight = observationsIndex[d(refs[1])]
-        target = observationsIndex.get(d(refs[2]), pointsIndex.get(d(refs[2])))
-        if target is None: print("Warning: Failed to dereference subtended angle target as either point or observation!")
-        elif isinstance(target, dict): target = target[""]
+        if d(refs[2]) in pointsIndex and d(refs[2]) not in observationsIndex:
+          print("WARNING! Subtended angle target line references a point instead of an observation!")
+        target = observationsIndex[d(refs[2])]
         obs = SubtendedAngle(observation["id"], start.get("time", data.get("time")), None, setup, backsight, target, observation["properties"])
         observationGroups[group["id"]].append(obs)
 
