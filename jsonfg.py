@@ -70,16 +70,16 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
       }
     elif isinstance(obs, SubtendedAngle):
       return {
-        'type': "Point",
-        'featureType': 'subtendedAngle',
-        'coordinates': transform(obs.setupPt, trans)
+        #'type': "Point",
+        #'featureType': 'subtendedAngle',
+        #'coordinates': transform(obs.setupPt, trans) # Redundant info!
       }
     elif isinstance(obs, CircleByCenter):
       obs.properties["radius"] = obs.radius
       return {
-        'type': "Point",
-        'featureType': 'circle',
-        'coordinates': transform(obs.centerSetup.point, trans)
+        #'type': "Point",
+        #'featureType': 'circle',
+        #'coordinates': transform(obs.centerSetup.point, trans) # Redundant info!
       }
     elif isinstance(obs, CubicSplineObservation):
       return {
@@ -98,65 +98,6 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
       return list(reversed(transformer.transform(pt.coord1, pt.coord2)))
     else:
       return list(transformer.transform(pt.coord1, pt.coord2))
-  lines = set()
-  observedVecs = []
-  for i, seg in enumerate(seg for parcel in data.parcels for geom in parcel.geom for seg in geom.segments if seg is not None):
-    if seg is None: pass
-    if isinstance(seg, list):
-      x = {
-        'id': getattr(seg, "id", "curve" + str(i)),
-        'type': "Feature",
-        # Is this the VectorPurpose value?
-        'featureType': 'boundary', # FIXME: This will need to support other feature types. What's the logic here?
-        'geometry': {
-          'type': "LineString",
-          'coordinates': simplifyPoly(trans, seg)
-        },
-        'place': {
-          'type': "LineString",
-          'coordinates': simplifyPoly(Transformer.from_crs(fileproj, fileproj), seg)
-        },
-        'properties': {
-          'comment': ""
-        }
-      }
-    elif isinstance(seg, Cubic):
-      x = {
-        'id': getattr(seg, "id", "cubic" + str(i)),
-        'type': "Feature",
-        'featureType': 'boundary',
-        'geometry': {
-          'type': "LineString",
-          'coordinates': [transform(pt) for pt in seg.asObs().interpolatedPath()]
-        },
-        'place': {
-          'type': "LineString",
-          'coordinates': [list(pt) for pt in seg.asObs().interpolatedPath()]
-        },
-        'properties': seg.properties
-      }
-    else:
-      if seg in lines: continue
-      lines.add(seg)
-      x = {
-        'id': seg.id or i,
-        'type': "Feature",
-        'featureType': "boundry",
-        # Is this the VectorPurpose value?
-        'featureType': 'boundary', # FIXME: This will need to support other feature types. What's the logic here?
-        'geometry': {
-          'type': "LineString",
-          'coordinates': [transform(seg.start), transform(seg.end)]
-        },
-        'place': {
-          'type': "LineString",
-          'coordinates': [list(seg.start), list(seg.end)]
-        },
-        'properties': {
-          'comment': ""
-        }
-      }
-    observedVecs.append(x)
  
   ret = {
     '$schema': 'schema.json',
@@ -192,7 +133,8 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
           'coordinates': [monument.point.coord1, monument.point.coord2] if monument.point is not None else []
         },
         'properties': monument.properties
-      } for i, monument in enumerate(data.monuments)] + observedVecs + [{
+      } for i, monument in enumerate(data.monuments)] + [{
+        'id': observation.name or 'obs' + str(i),
         'type': "Feature",
         'featureType': "sosa:ObservationCollection",
         'geometry': exportObs(observation, 'wgs84'),
