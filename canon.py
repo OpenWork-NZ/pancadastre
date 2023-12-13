@@ -124,13 +124,13 @@ def importCSDM(file):
           return [pointsIndex[d(pt)][""] for pt in feat["references"]]
         obsId = observation.get("id")
         topology = observation["topology"]
-        obs = CubicSplineObservation(obsId, refs(topology["startTangentVector"]), refs(topology["endTangentVector"]), refs(topology), observation["properties"])
+        obs = CubicSplineObservation(obsId, refs(topology.get("startTangentVector")), refs(topology.get("endTangentVector")), refs(topology), observation["properties"])
         observations.append(obs)
 
         if obsId is not None:
           observationsIndex[obsId] = obs
-          geom = Cubic(obsId, refs(topology["startTangentVector"]), refs(topology["endTangentVector"]), refs(topology))
-          segments[obsId] = [geoms]
+          geom = Cubic(obsId, refs(topology.get("startTangentVector")), refs(topology.get("endTangentVector")), refs(topology))
+          segments[obsId] = [geom]
       else:
         print("Unexpected observedVector topology-type: ", observation["topology"]["type"])
     observationGroups[group["id"]] = observations

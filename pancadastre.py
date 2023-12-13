@@ -104,11 +104,13 @@ if __name__ == "__main__":
       const=1, type=int, nargs='?')
   argparser.add_argument('--epsg', help="Overwrite the projection being used.")
   argparser.add_argument('-j', '--jsonfg', help="JSONfg output file", const="?.json", nargs='?')
+  argparser.add_argument('-k', '--jsonfgparcel', help="JSONfg output file for parcels", const="?.parcels.json", nargs='?')
   argparser.add_argument('-r', '--rdf', help="RDF syntax to output", const="ttl", nargs='?')
   argparser.add_argument('-o', '--output', help="RDF file to output to", const="?.rdf", nargs='?')
   argparser.add_argument('-c', '--csdm', help="CSDM JSON output file", const="?.json", nargs='?')
   argparser.add_argument('-s', '--summary', help="Textual summary of parsed data", const="?.txt", nargs='?')
   argparser.add_argument('-g', '--geojson', help="GeoJSON output file", const="?.json", nargs='?')
+  argparser.add_argument('-p', '--geojsonparcel', help="GeoJSON output file for parcels", const="?.parcels.json", nargs='?')
   argparser.add_argument('-e', '--errorlog', help="Log of any encountered errors", const="?.log", nargs='?')
   args = argparser.parse_args()
 
@@ -129,7 +131,11 @@ if __name__ == "__main__":
     if args.jsonfg:
       with open(args.jsonfg.replace("?", filename), "w") as f: exportJSONfg(data, f)
       wrote_output = True
+    if args.jsonfgparcel:
+      with open(args.jsonfgparcel.replace("?", filename), "w") as f: exportJSONfgParcel(data, f)
+      wrote_output = True
     # Extra condition suppresses GeoJSON files for empty geometry counts.
+    group = data.survey.observationGroups
     if args.geojson and (len(data.monuments) +
         sum(1 for parcel in data.parcels
             for geom in parcel.geom for seg in geom.segments) +
@@ -138,6 +144,15 @@ if __name__ == "__main__":
         > 0):
       with open(args.geojson.replace("?", filename), "w") as f:
         exportGeoJSON(data, f)
+      wrote_output = True
+    if args.geojsonparcel and (len(data.monuments) +
+        sum(1 for parcel in data.parcels
+            for geom in parcel.geom for seg in geom.segments) +
+        sum(1 for _ in data.survey.observationGroups.items()
+            for i, observation in enumerate(group))
+        > 0):
+      with open(args.geojsonparcel.replace("?", filename), "w") as f:
+        exportGeoJSONParcel(data, f)
       wrote_output = True
     if args.output or args.rdf:
       with open((args.output or "?.rdf").replace("?", filename), "w") as f:

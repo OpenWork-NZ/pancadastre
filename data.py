@@ -316,7 +316,7 @@ class Curve(Segment):
   def __eq__(self, other): return self.id == other.id
 
 class Cubic(Segment):
-  def __init__(self, id, startTangent, endTangent, controlPoints):
+  def __init__(self, id, startTangent, endTangent, controlPoints, properties = None):
     self.id = id
     assert len(startTangent) == 2 or startTangent is None
     self.startTangent = startTangent
@@ -324,12 +324,12 @@ class Cubic(Segment):
     self.endTangent = endTangent
     assert len(controlPoints) >= 3
     self.controlPoints = controlPoints
-    self.properties = properties
+    self.properties = properties or {}
 
   @property
-  def start(self): return self.startTangent[0]
+  def start(self): return self.controlPoints[0]
   @property
-  def end(self): return self.endTangent[-1]
+  def end(self): return self.controlPoints[-1]
 
 class Feature:
   def __init__(self, desc, name, geom, properties = {}):
@@ -652,9 +652,9 @@ class CubicSplineObservation(Observation):
     import numpy as np
     from scipy import interpolate
 
-    points = np.array(map(list, self.controlPoints))
+    points = np.array(list(map(list, self.controlPoints)))
     tck, u = interpolate.splprep(points.transpose(), s=0)
-    unew = np.arange(min(pt[0] for pt in points), max(pt[0] for pt in points), interval)
+    unew = np.arange(0, 1.01, 0.01)
     out = interpolate.splev(unew, tck)
 
-    return [Point(None, None, None, pt[0], pt[1], pt[3] if len(pt) >= 3 else None, self.name + '-' + str(i)) for i, pt in enumerate(out)]
+    return [Point(None, None, None, pt[0], pt[1], pt[3] if len(pt) >= 3 else None, self.name + '-' + str(i)) for i, pt in enumerate(zip(*out))]
