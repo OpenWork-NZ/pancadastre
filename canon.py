@@ -22,7 +22,7 @@ def importCSDM(file):
     return ret
 
   referencedCSDs = [ReferencedCSD(ref["id"], ref["name"], ref.get("adminUnit", {}).get("href"), ref.get("adminUnit", {}).get("rel"), ref.get("adminUnit", {}).get("role"), ref["bearingRotation"], ref["time"]) for ref in data.get("referencedCSDs", [])]
-  referencedDocs = [SupportingDocument(doc.get["title"], doc["href"], doc.get("role"), doc.get("rel")) for doc in data.get("supportingDocuments", [])]
+  referencedDocs = [SupportingDocument(doc["title"], doc["href"], doc.get("role"), doc.get("rel")) for doc in data.get("supportingDocuments", [])]
 
   monuments = []
   points = []
