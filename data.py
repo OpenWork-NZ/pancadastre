@@ -290,7 +290,7 @@ class Curve(Segment):
       dist = center - start
       r = sqrt(dist.coord1*dist.coord1 + dist.coord2*dist.coord2)
 
-    a, b = (start, end) if is_clockwise else (end, start)
+    a, b = (start, end) if not is_clockwise else (end, start)
     ab = b - a
     lab = sqrt(ab.coord1*ab.coord1 + ab.coord2*ab.coord2)
     uab = ab.div(lab)
