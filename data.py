@@ -145,7 +145,9 @@ class Point:
     return Point(self.survey, self.name, self.state, self.coord1 - other.coord1, self.coord2 - other.coord2, (self.coord3 or 0) - (other.coord3 or 0), str(self.objID) + "-" + str(other.objID))
   def div(self, other = 2):
     if other == 0: other = 1 # Ensure we don't crash!
-    return Point(self.survey, self.name, self.state, self.coord1/other, self.coord2/other, (self.coord3 or 0)/other, str(self.objID) + "/" + str(other))
+    return Point(self.survey, self.name, self.state, self.coord1/other, self.coord2/other, self.coord3/other if self.coord3 is not None else None, str(self.objID) + "/" + str(other))
+  def mul(self, other = 2):
+    return Point(self.survey, self.name, self.state, self.coord1*other, self.coord2*other, self.coord3*other if self.coord3 is not None else None, str(self.objID) + "*" + str(other))
   def offset1(self, offset1):
     return Point(self.survey, self.name, self.state, self.coord1 + offset1, self.coord2, self.coord3, str(self.objID) + "+" + str(offset1))
   def offset2(self, offset2):

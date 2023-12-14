@@ -41,17 +41,17 @@ def interpCurves(data, delta):
           continue
         interp = interpCurve(segment.start, segment.mid, segment.end)
 
-        east0, north0 = segment.start
-        east1, north1 = segment.end
-        eastd, northd = east0 - east1, north0 - north1
-        dist = sqrt(eastd*eastd + northd*northd)
+        #east0, north0 = segment.start
+        #east1, north1 = segment.end
+        d = segment.start - segment.end
+        dist = sqrt(d.coord1*d.coord1 + d.coord2*d.coord2 + (d.coord3*d.coord3 if d.coord3 is not None else 0))
         subdivisions = ceil(dist/delta)
 
         subsegs = IDList()
         prev = interp(0)
         for t in range(subdivisions):
           end = interp((t+1)/subdivisions)
-          subsegs.append(Line(t, Point(None, None, None, prev[0], prev[1], None, segment.id + '+' + str(t)), Point(None, None, None, end[0], end[1], None, segment.id + '+' + str(t+1))))
+          subsegs.append(Line(t, prev, end))
           prev = end
         subsegs.id = segment.id # Attach extra property to preserve original ID.
         segments.append(subsegs)
@@ -64,10 +64,10 @@ def interpCurves(data, delta):
       if isinstance(observation, ReducedArcObservation):
         segment = observation.geom
         interp = interpCurve(segment.start, segment.mid, segment.end)
-        east0, north0 = segment.start
-        east1, north1 = segment.end
-        eastd, northd = east0 - east1, north0 - north1
-        dist = sqrt(eastd*eastd + northd*northd)
+        #east0, north0 = segment.start
+        #east1, north1 = segment.end
+        d = segment.start - segment.end
+        dist = sqrt(d.coord1*d.coord1 + d.coord2*d.coord2 + (d.coord3*d.coord3 if d.coord3 is not None else 0))
         if isnan(dist):
           print("WARNING: Failed to compute distance between the 2 points!",
               (east0, north0), (east1, north1))
@@ -78,24 +78,29 @@ def interpCurves(data, delta):
         prev = interp(0)
         for t in range(subdivisions):
           end = interp((t+1)/subdivisions)
-          subsegs.append(Line(t, Point(None, None, None, prev[0], prev[1]),
-              Point(None, None, None, end[0], end[1])))
+          subsegs.append(Line(t, prev, end))
           prev = end
         subsegs.id = segment.id
         observation.geom = subsegs
 
 def interpCurve(a, m, b):
   # See https://observablehq.com/@jrus/circle-arc-interpolation
-  b_m = b.coord1 - m.coord1, b.coord2 - m.coord2
-  m_a = m.coord1 - a.coord1, m.coord2 - a.coord2
-  ab_m = a.coord1*b_m[0] - a.coord2*b_m[1], a.coord1*b_m[1] + a.coord2*b_m[0]
-  bm_a = b.coord1*m_a[0] - b.coord2*m_a[1], b.coord1*m_a[1] + b.coord2*m_a[0]
+  b_m = b - m
+  m_a = m - a
+  ab_m = a.coord1*b_m.coord1 - a.coord2*b_m.coord2, a.coord1*b_m.coord2 + a.coord2*b_m.coord1 # 3rd dimension?
+  ab_m = Point(None, None, None, ab_m[0], ab_m[1], a.coord3, a.objID)
+  bm_a = b.coord1*m_a.coord1 - b.coord2*m_a.coord2, b.coord1*m_a.coord2 + b.coord2*m_a.coord1 # 3rd dimension?
+  bm_a = Point(None, None, None, bm_a[0], bm_a[1], b.coord3, b.objID)
 
   def inner(t):
-    num = ab_m[0]*(1-t) + bm_a[0]*t, ab_m[1]*(1-t) + bm_a[1]*t
-    den = b_m[0]*(1-t) + m_a[0]*t, b_m[1]*(1-t) + m_a[1]*t
-    dist2 = den[0]*den[0] + den[1]*den[1]
-    return (num[0]*den[0] + num[1]*den[1])/dist2, (num[1]*den[0] - num[0]*den[1])/dist2
+    num = ab_m.mul(1-t) + bm_a.mul(t)
+    den = b_m.mul(1-t) + m_a.mul(t)
+    dist2 = den.coord1*den.coord1 + den.coord2*den.coord2
+    if den.coord3 is not None: dist2 += den.coord3*den.coord3
+    x = (num.coord1*den.coord1 + num.coord2*den.coord2)/dist2
+    y = (num.coord2*den.coord1 - num.coord1*den.coord2)/dist2
+    z = a.coord3 # 3rd dimension?
+    return Point(None, None, None, x, y, z, str(a.objID) + ':' + str(t))
   return inner
 
 ## Commandline interface
