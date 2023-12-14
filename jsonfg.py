@@ -161,14 +161,14 @@ def exportJSONfgParcel(data, file = None, isGeoJSON = False):
       if i == len(lines) - 1:
         if line.end in list(lines[i-1]):
           line.start, line.end = line.end, line.start
-        elif line.start not in list(lines[i-1]):
-          print("WARNING: Non-contiguous line segments (last)!", line, lines)
+        #elif line.start not in list(lines[i-1]):
+        #  print("WARNING: Non-contiguous line segments (last)!", line, lines)
         # Otherwise, it's fine!
       else:
         if line.start in list(lines[i+1]):
           line.start, line.end = line.end, line.start
-        elif line.end not in list(lines[i+1]):
-          print("WARNING: Non-contiguous line segments!", line, lines)
+        #elif line.end not in list(lines[i+1]):
+        #  print("WARNING: Non-contiguous line segments!", line, lines)
         # Otherwise, it's fine!
 
     points = []
