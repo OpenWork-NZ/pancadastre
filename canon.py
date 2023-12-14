@@ -21,7 +21,8 @@ def importCSDM(file):
     instruments.append(ret)
     return ret
 
-  referencedCSDs = [ReferencedCSD(ref["id"], ref["name"], ref.get("adminUnit", {}).get("href"), ref.get("adminUnit", {}).get("rel"), ref.get("adminUnit", {}).get("role"), ref["bearingRotation"], ref["time"]) for ref in data["referencedCSDs"]]
+  referencedCSDs = [ReferencedCSD(ref["id"], ref["name"], ref.get("adminUnit", {}).get("href"), ref.get("adminUnit", {}).get("rel"), ref.get("adminUnit", {}).get("role"), ref["bearingRotation"], ref["time"]) for ref in data.get("referencedCSDs", [])]
+  referencedDocs = [SupportingDocument(doc.get["title"], doc["href"], doc.get("role"), doc.get("rel")) for doc in data.get("supportingDocuments", [])]
 
   monuments = []
   points = []
@@ -161,7 +162,7 @@ def importCSDM(file):
         [segment for ref in refs for segment in segments.get(ref if isinstance(ref, str) else ref.get('$ref'), [])]))
       parcels.append(Parcel.fromProperties(None, None, geoms, geom["properties"], geom["id"], geom.get("featureType"))) # TODO: Differentiate primary vs secondary
     
-  return Cadastre(projection, {}, None, monuments, points, parcels, Survey(metadata, instruments, observationGroups), referencedCSDs = referencedCSDs)
+  return Cadastre(projection, {}, None, monuments, points, parcels, Survey(metadata, instruments, observationGroups), referencedCSDs = referencedCSDs, supportingDocs = referencedDocs)
 
 def exportCSDM(data, file):
   import json

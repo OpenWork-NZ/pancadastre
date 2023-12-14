@@ -2,7 +2,7 @@ from datetime import datetime
 from math import floor, isclose, sqrt
 
 class Cadastre:
-  def __init__(self, projection, features, units, monuments, points, parcels, survey, boundaries = [], referencedCSDs = []):
+  def __init__(self, projection, features, units, monuments, points, parcels, survey, boundaries = [], referencedCSDs = [], supportingDocs = []):
     self.projection = projection or Projection("epsg:4326")
     self.features = features
     self.units = units # Refactor to assign units directly against points, observations, etc?
@@ -12,6 +12,7 @@ class Cadastre:
     self.survey = survey # Haven't actually used the multiplicity here... Merge it's fields in?
     self.boundaries = boundaries # Any survey boundary vectors
     self.referencedCSDs = referencedCSDs
+    self.supportingDocs = supportingDocs
 
 class ReferencedCSD:
   def __init__(self, id, name, href, rel, role, bearing, time):
@@ -22,6 +23,13 @@ class ReferencedCSD:
     self.role = role
     self.bearing = bearing
     self.time = datetime.fromisoformat(time)
+
+class SupportingDocument:
+  def __init__(self, title, href, role, rel):
+    self.title = title
+    self.href = href
+    self.role = role
+    self.rel = rel
 
 class App:
   def __init__(self, app, appversion, appAuthors):

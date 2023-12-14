@@ -75,5 +75,12 @@ def exportSummary(data):
     ret += "\t" + str(ref.name) + "\t" + str(ref.id) + "\t"
     ret += str(ref.href) + " (" + str(ref.role) + ")\t" + str(ref.rel) + "\t"
     ret += str(ref.bearing) + "\t" + str(ref.time) + "\n"
+  if len(data.supportingDocs) > 0:
+    ret += "Supporting Documents:\t" + str(len(data.supportingDocs)) + "\n"
+  for doc in data.supportingDocs:
+    ret += "\t" + str(doc.role) + "\t" + str(doc.title)
+    if doc.href is not None:
+      ret += " (" + doc.href + ")"
+    ret += "\t" + doc.rel + "\n"
 
   return ret
