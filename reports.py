@@ -50,9 +50,9 @@ def exportSummary(data):
       elif isinstance(observation, SubtendedAngle):
         ret += str(observation.setupPt) + "\t"
         backsight = observation.backsightSetup
-        ret += str(backsight.stationName or backsight.id) + "\t"
+        ret += str(getattr(backsight, 'stationName', getattr(backsight, 'name', ""))) + "\t"
         target = observation.targetSetup
-        ret += str(target.stationName or target.id) + "\n"
+        ret += str(getattr(target, 'stationName', getattr(target, 'name', ""))) + "\n"
       elif isinstance(observation, CircleByCenter):
         center = observation.centerSetup
         ret += str(center.stationName or center.id) + "\t"
