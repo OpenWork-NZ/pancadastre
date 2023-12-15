@@ -648,7 +648,7 @@ class CircleByCenter(Observation):
 
 class CubicSplineObservation(Observation):
   counter = 0
-  def __init__(self, name, startTangent, endTangent, controlPoints, properties = None):
+  def __init__(self, name, startTangent, endTangent, controlPoints, properties = None, date = None, purpose = None):
     self.name = name
     if self.name is None:
       self.name = "cs" + str(CubicSplineObservation.counter)
@@ -659,6 +659,8 @@ class CubicSplineObservation(Observation):
     self.endTangent = endTangent
     assert len(controlPoints) >= 3
     self.controlPoints = controlPoints
+    self.date = date
+    self.purpose = purpose
     self.properties = properties or {}
 
   def populateProperties(self): pass
