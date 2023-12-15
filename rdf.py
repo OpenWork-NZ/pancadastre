@@ -4,8 +4,9 @@ from data import *
 
 def exportWKTGeom(data):
   def pt(point):
-    # Latitude,Longitude order
-    return str(pt.coord1) + " " + str(pt.coord2)
+    ret = str(pt.coord1) + " " + str(pt.coord2)
+    if pt.coord3 is not None: ret += " " + str(pt.coord3)
+    return ret
   rets = []
   for seg in segments:
     if isinstance(seg, Line):
@@ -34,8 +35,8 @@ def exportRDF(data, file, format="turtle"):
     # FIXME: Translate this literal to a URL... Next 3 properties have been remodelled.
     g.add((oGeom, geom.srsName, rdflib.Literal(point.projection or data.projection.horizontal)))
     g.add((oGeom, geom.srsDimension, rdflib.Literal(2)))
-    g.add((oGeom, geom.pos, rdflib.Literal(str(point.coord1) + " " + str(point.coord2))))
-    g.add((oGeom, geo.asWKT, rdflib.Literal("POINT( " + str(point.coord1) + " " + str(point.coord2) + " )")))
+    g.add((oGeom, geom.pos, rdflib.Literal(str(point.coord1) + " " + str(point.coord2) + (" " + str(point.coord3) if point.coord3 is not None else ""))))
+    g.add((oGeom, geo.asWKT, rdflib.Literal("POINT( " + str(point.coord1) + " " + str(point.coord2) + (" " + str(point.coord3) if point.coord3 is not None else "") + " )")))
     
     g.add((oPt, surv.hasPointQuality, rdflib.Literal(point.observation.distanceQuality)))
     g.add((oPt, surv.hasProvenance, rdflib.Literal(point.state)))
@@ -51,8 +52,7 @@ def exportRDF(data, file, format="turtle"):
     g.add((oGeom, RDF.type, geom.Point))
     g.add((oGeom, geom.srsName, rdflib.Literal(pt.projection or data.projection.horizontal)))
     g.add((oGeom, geom.srsDimension, rdflib.Literal(2)))
-    g.add((oGeom, geom.pos, rdflib.Literal(str(point.coord1) + " " + str(point.coord2))))
-    g.add(())
+    g.add((oGeom, geom.pos, rdflib.Literal(str(point.coord1) + " " + str(point.coord2) + (" " + str(point.coord3) if point.coord3 is not None else ""))))
 
     g.add((oGeom, surv.hasPointQuality, rdflib.Literal(point.observation.distanceQuality)))
     g.add((oGeom, surv.hasProvenance, rdflib.Literal(point.state)))

@@ -2,7 +2,6 @@ from data import *
 from pyproj import Transformer
 import json
 
-# TODO: Tweak according to surveyfeatures.json, circular_arc.json
 def exportJSONfg(data, file = None, isGeoJSON = False):
   def simplifyPoly(trans, lines):
     lines = [line for line in lines if line is not None]
@@ -130,11 +129,11 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
         },
         'place': {
           'type': "Point",
-          'coordinates': [monument.point.coord1, monument.point.coord2] if monument.point is not None else []
+          'coordinates': list(monument.point) if monument.point is not None else []
         },
         'properties': monument.properties
       } for i, monument in enumerate(data.monuments)] + [{
-        'id': observation.name or 'obs' + str(i),
+        'id': observation.name or ('obs' + str(i)),
         'type': "Feature",
         'featureType': "sosa:ObservationCollection",
         'geometry': exportObs(observation, 'wgs84'),
@@ -212,16 +211,16 @@ def exportJSONfgParcel(data, file = None, isGeoJSON = False):
       }
     elif isinstance(obs, SubtendedAngle):
       return {
-        'type': "Point",
-        'featureType': 'subtendedAngle',
-        'coordinates': transform(obs.setupPt, trans)
+        #'type': "Point",
+        #'featureType': 'subtendedAngle',
+        #'coordinates': transform(obs.setupPt, trans)
       }
     elif isinstance(obs, CircleByCenter):
       obs.properties["radius"] = obs.radius
       return {
-        'type': "Point",
-        'featureType': 'circle',
-        'coordinates': transform(obs.centerSetup.point, trans)
+        #'type': "Point",
+        #'featureType': 'circle',
+        #'coordinates': transform(obs.centerSetup.point, trans)
       }
     elif isinstance(obs, CubicSplineObservation):
       return {
@@ -272,7 +271,7 @@ def exportJSONfgParcel(data, file = None, isGeoJSON = False):
         },
         'place': {
           'type': "Point",
-          'coordinates': [monument.point.coord1, monument.point.coord2] if monument.point is not None else []
+          'coordinates': list(monument.point) if monument.point is not None else []
         },
         'properties': monument.properties
       } for i, monument in enumerate(data.monuments)] + [{

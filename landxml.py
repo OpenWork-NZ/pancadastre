@@ -335,7 +335,7 @@ def exportLandXML(data, file):
     ET.SubElement(cgpointsL, "CgPoint", {
         # surveyOrder?
         'name': point.name, 'pntSurv': point.survey, 'state': point.state, 'oID': point.objID
-    }).text = str(point.coord1) + " " + str(point.coord2)
+    }).text = str(point.coord1) + " " + str(point.coord2) + (" " + str(point.coord3) if point.coord3 is not None else "")
 
   def outputGeom(geoms):
     for geom in geoms:
@@ -361,7 +361,7 @@ def exportLandXML(data, file):
         # Store oIDs?
         'name': parcel.name, 'oID': id(parcel), 'area': parcel.area, 'parcelType': parcel.type, 'class': parcel.klass, 'state': parcel.state, 'parcelFormat': parcel.format, 'desc': parcel.desc
     })
-    ET.SubElement(parcelL, "Center").text = str(parcel.center.coord1) + " " + str(parcel.center.coord2)
+    ET.SubElement(parcelL, "Center").text = str(parcel.center.coord1) + " " + str(parcel.center.coord2) + (" " + str(parcel.center.coord3) if parcel.center.coord3 is not None else "")
     outputGeom(parcel.geom)
     if isinstance(parcel.titleDoc, dict):
       for titleName, titleType in parcel.titleDoc.items():

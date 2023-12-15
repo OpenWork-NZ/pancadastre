@@ -53,7 +53,9 @@ def importCSDM(file):
       pointsIndex[monument["id"]] = deepcopy(monument)
       pointsIndex[monument["id"]][""] = point
       # The observations will be initialized later
-      monuments.append(Monument((monument["properties"].get("name") or {}).get("label", monument["id"]), point, monumentedBy.get("state", monumentedBy.get("monumentState")), monumentedBy.get("form", monumentedBy.get("monumentForm")), monumentedBy.get("condition", monumentedBy.get("monumentCondition")), properties = monument["properties"], klass = monument.get("featureType")))
+      name = monument["properties"].get("name") or {}
+      if isinstance(name, dict): name = name.get("label", monument["id"])
+      monuments.append(Monument(name, point, monumentedBy.get("state", monumentedBy.get("monumentState")), monumentedBy.get("form", monumentedBy.get("monumentForm")), monumentedBy.get("condition", monumentedBy.get("monumentCondition")), properties = monument["properties"], klass = monument.get("featureType")))
 
   def n(comment): return None # Indicates a TODO...
   def d(x):
@@ -74,7 +76,11 @@ def importCSDM(file):
           start = pointsIndex[d(observation["topology"]["references"][i-1])]
           end = pointsIndex[d(observation["topology"]["references"][i])]
           # Distance comes from vector observations, we might want to split that class out!
-          obs = ReducedObservation(None, instrument(start["id"], (start["properties"].get("name") or {}).get("label", start["id"]), None, start[""]), instrument(end["id"], (end["properties"].get("name") or {}).get("label", end["id"]), None, end[""]), measure.azimuth, measure.dist, measure.equipment, measure.distType, measure.azimuthType, observation["id"], start.get("time", data.get("time")), start["properties"], measure = measure)
+          startname = start["properties"].get("name") or {}
+          if isinstance(startname, dict): startname = startname.get("label", start["id"])
+          endname = end["properties"].get("name") or {}
+          if isinstance(endname, dict): endname = endname.get("label", end["id"])
+          obs = ReducedObservation(None, instrument(start["id"], startname, None, start[""]), instrument(end["id"], endname, None, end[""]), measure.azimuth, measure.dist, measure.equipment, measure.distType, measure.azimuthType, observation["id"], start.get("time", data.get("time")), start["properties"], measure = measure)
           observations.append(obs)
           observationsIndex[observation["id"]] = obs
 
@@ -85,7 +91,11 @@ def importCSDM(file):
         mid = pointsIndex[d(observation["topology"]["references"][1])]
         end = pointsIndex[d(observation["topology"]["references"][2])]
         # Distance, radius, etc comes from vector observations.
-        obs = ReducedArcObservation(None, instrument(start["id"], (start["properties"].get("name") or {}).get("label", start["id"]), None, start[""]), instrument(end["id"], (end["properties"].get("name") or {}).get("label", end["id"]), None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start.get("time", data.get("time")), start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
+        startname = start["properties"].get("name") or {}
+        if isinstance(startname, dict): startname = startname.get("label", start["id"])
+        endname = end["properties"].get("name") or {}
+        if isinstance(endname, dict): endname = endname.get("label", end["id"])
+        obs = ReducedArcObservation(None, instrument(start["id"], startname, None, start[""]), instrument(end["id"], endname, None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start.get("time", data.get("time")), start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
         observations.append(obs)
         observationsIndex[observation["id"]] = obs
 
@@ -98,7 +108,10 @@ def importCSDM(file):
         start = pointsIndex[d(observation["topology"]["references"][0])]
         end = pointsIndex[d(observation["topology"]["references"][1])]
         mid = pointsIndex[d(observation["topology"]["references"][2])]
-        obs = ReducedArcObservation(None, instrument(start["id"], (start["properties"].get("name") or {}).get("label", start["id"]), None, start[""]), instrument(end["id"], (end["properties"].get("name") or {}).get("label", end["id"]), None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start.get("time", data.get("time")), start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
+        startname = start["properties"].get("name") or {}
+        if isinstance(startname, dict): startname = startname.get("label", start["id"])
+        endname = end["properties"].get("name") or {}
+        obs = ReducedArcObservation(None, instrument(start["id"], startname, None, start[""]), instrument(end["id"], endname, None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start.get("time", data.get("time")), start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
         observations.append(obs)
         observationsIndex[observation["id"]] = obs
 
@@ -111,7 +124,9 @@ def importCSDM(file):
         pass
       elif observation["topology"]["type"].lower() == "circlebycenter":
         center = pointsIndex[d(observation["topology"]["references"][0])]
-        obs = CircleByCenter(observation["id"], center.get("time", data.get("time")), None, instrument(center["id"], (center["properties"].get("name") or {}).get("label", center["id"]), None, center[""]), observation["topology"]["radius"], observation["properties"])
+        centername = center["properties"].get("name") or {}
+        if isinstance(centername, dict): centername = centername.get("label", center["id"])
+        obs = CircleByCenter(observation["id"], center.get("time", data.get("time")), None, instrument(center["id"], centername, None, center[""]), observation["topology"]["radius"], observation["properties"])
         observations.append(obs)
         observationsIndex[observation["id"]] = obs
 
@@ -199,13 +214,6 @@ def exportCSDM(data, file):
       else: i += 1
     return list(map(list, points))
 
-  def exportGeom(parcel, proj):
-    trans = Transformer.from_crs(fileproj, proj)
-    return {
-      'type': 'Linestring',
-      'coordRefSys': proj,
-      'coordinates': [simplifyPoly(trans, Geom.flatten(geom.segments)) for geom in parcel.geom]
-    }
   fileproj = data.projection.horizontal
   if fileproj[:5] == "epsg:": fileproj = fileproj[5:]
   trans = Transformer.from_crs(fileproj, 'wgs84')
@@ -286,7 +294,7 @@ def exportCSDM(data, file):
         'time': monument.point.date,
         'place': {
           'type': "Point",
-          'coordinates': [monument.point.coord1, monument.point.coord2] if monument.point is not None else []
+          'coordinates': [monument.point.coord1, monument.point.coord2] + ([monument.point.coord3] if monument.point.coord3 is not None else []) if monument.point is not None else []
         },
         'properties': monument.properties
       } for i, monument in enumerate(data.monuments)]

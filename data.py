@@ -134,15 +134,17 @@ class Point:
     return self.objID == other.objID
 
   def __str__(self):
-    return repr(self.objID)
+    ret = str(self.coord1) + "," + str(self.coord2)
+    if self.coord3 is not None: ret += "," + str(self.coord3)
+    return ret
 
   def __repr__(self):
     return repr(self.objID)
 
   def __add__(self, other):
-    return Point(self.survey, self.name, self.state, self.coord1 + other.coord1, self.coord2 + other.coord2, (self.coord3 or 0) + (other.coord3 or 0), str(self.objID) + "+" + str(other.objID))
+    return Point(self.survey, self.name, self.state, self.coord1 + other.coord1, self.coord2 + other.coord2, (self.coord3 or 0) + (other.coord3 or 0) if self.coord3 is not None or other.coord3 is not None else None, str(self.objID) + "+" + str(other.objID))
   def __sub__(self, other):
-    return Point(self.survey, self.name, self.state, self.coord1 - other.coord1, self.coord2 - other.coord2, (self.coord3 or 0) - (other.coord3 or 0), str(self.objID) + "-" + str(other.objID))
+    return Point(self.survey, self.name, self.state, self.coord1 - other.coord1, self.coord2 - other.coord2, (self.coord3 or 0) - (other.coord3 or 0) if self.coord3 is not None or other.coord3 is not None else None, str(self.objID) + "-" + str(other.objID))
   def div(self, other = 2):
     if other == 0: other = 1 # Ensure we don't crash!
     return Point(self.survey, self.name, self.state, self.coord1/other, self.coord2/other, self.coord3/other if self.coord3 is not None else None, str(self.objID) + "/" + str(other))
