@@ -139,7 +139,16 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
         'geometry': exportObs(observation, 'wgs84'),
         'place': exportObs(observation, fileproj),
         'properties': getattr(observation, 'properties', {})
-      } for groupID, group in data.survey.observationGroups.items() for i, observation in enumerate(group)]
+      } for groupID, group in data.survey.observationGroups.items() for i, observation in enumerate(group)] + [{
+        'type': 'Feature',
+        'id': parcel.oid or i,
+        'featureType': 'parcel',
+        'links': [],
+        'time': '', # Appears to be missing from LandXML
+        'geometry': exportGeom(parcel, 'wgs84'),
+        'place': exportGeom(parcel, fileproj),
+        'properties': parcel.properties
+      } for i, parcel in enumerate(data.parcels)]
   }
   if file is not None: json.dump(ret, file, indent=4)
   else: return ret
