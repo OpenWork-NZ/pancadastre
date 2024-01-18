@@ -72,6 +72,7 @@ def importCSDM(file):
       if "id" in observation: isUID(observation["id"])
       # FIXME: Is it a bug if a point doesn't have a measure? Should this be reported?
       measure = measures.get(observation.get("id")) or Measure.fromProperties({}, {})
+      geoms = []
       if observation["topology"]["type"].lower() == "linestring":
         for i in range(1, len(observation["topology"]["references"])):
           start = pointsIndex[d(observation["topology"]["references"][i-1])]
@@ -86,7 +87,8 @@ def importCSDM(file):
           observationsIndex[observation["id"]] = obs
 
           geom = Line(observation["id"], start[""], end[""])
-          segments[observation["id"]] = [geom]
+          geoms.append(geom)
+        segments[observation["id"]] = geoms
       elif observation["topology"]["type"].lower() == "arc":
         start = pointsIndex[d(observation["topology"]["references"][0])]
         mid = pointsIndex[d(observation["topology"]["references"][1])]
