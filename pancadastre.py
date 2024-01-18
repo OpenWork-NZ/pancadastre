@@ -41,6 +41,7 @@ def interpCurves(data, delta):
           continue
         interp = interpCurve(segment.start, segment.mid, segment.end)
 
+
         #east0, north0 = segment.start
         #east1, north1 = segment.end
         d = segment.start - segment.end
@@ -61,7 +62,7 @@ def interpCurves(data, delta):
   for feature in data.features: inner(feature)
   for observations in data.survey.observationGroups.values():
     for observation in observations:
-      if isinstance(observation, ReducedArcObservation):
+      if isinstance(observation, ReducedArcObservation) or isinstance(observation, ArcByChord):
         segment = observation.geom
         interp = interpCurve(segment.start, segment.mid, segment.end)
         #east0, north0 = segment.start

@@ -155,6 +155,8 @@ class Point:
   def offset2(self, offset2):
     return Point(self.survey, self.name, self.state, self.coord1, self.coord2 + offset2, self.coord3, str(self.objID) + "++" + str(offset2))
 
+  def dist2D(self):
+    return sqrt(self.coord1*self.coord1 + self.coord2*self.coord2)
 class Parcel:
   def __init__(self, name, area, type, state, klass, format, center, geom, titleDoc, address=None, desc = None, properties = None, oid = None):
     props = properties or {}
@@ -326,6 +328,8 @@ class Curve(Segment):
 
   def __hash__(self): return hash(self.id)
   def __eq__(self, other): return self.id == other.id
+  def __repr__(self):
+    return "Curve(" + str(self.id) + ", " + str(self.is_clockwise) + ", " + str(self.radius) + ", " + str(self.start) + ", " + str(self.mid) + ", " + str(self.end) + ", " + str(self.state) + ")"
 
 class Cubic(Segment):
   def __init__(self, id, startTangent, endTangent, controlPoints, properties = None):
@@ -675,3 +679,18 @@ class CubicSplineObservation(Observation):
     out = interpolate.splev(unew, tck)
 
     return [Point(None, None, None, pt[0], pt[1], pt[3] if len(pt) >= 3 else None, self.name + '-' + str(i)) for i, pt in enumerate(zip(*out))]
+
+class ArcByChord(Observation):
+  def __init__(self, name, setup, target, radius, is_clockwise, properties = None):
+    self.name = name
+    self.setupPoint = setup
+    self.targetPoint = target
+    self.radius = radius
+    self.is_clockwise = is_clockwise
+    self.properties = properties or {}
+    self.geom = None
+
+  def populateProperties(self): pass
+
+  def __repr__(self):
+    return "ArcByChord(" + str(self.name) + ", " + str(self.setupPoint) + ", " + str(self.targetPoint) + ", " + str(self.radius) + ", " + repr(self.properties) + ")"

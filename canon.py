@@ -1,6 +1,7 @@
 from data import *
 import json
 from jsonfg import * # I question this...
+from math import sqrt
 
 def importCSDM(file):
   from copy import deepcopy
@@ -147,6 +148,29 @@ def importCSDM(file):
           observationsIndex[obsId] = obs
           geom = Cubic(obsId, refs(topology.get("startTangentVector")), refs(topology.get("endTangentVector")), refs(topology))
           segments[obsId] = [geom]
+      elif observation["topology"]["type"].lower() == "arcbychord":
+        obsId = observation.get("id")
+        pointA = pointsIndex[d(observation["topology"]["references"][0])][""]
+        pointB = pointsIndex[d(observation["topology"]["references"][1])][""]
+        radius = observation["topology"]["radius"]
+        isClockwise = observation["topology"].get("orientation", "cw") == "cw"
+
+        obs = ArcByChord(obsId, pointA, pointB, radius, isClockwise, observation.get("properties"))
+        observations.append(obs)
+
+        # https://stackoverflow.com/questions/24928317/draw-a-curved-line-with-given-radius-and-two-locations
+        dist = (pointA - pointB).dist2D()/2
+        saggita = radius - sqrt(radius*radius - dist*dist)
+        mid = (pointA + pointB).div()
+        vec = pointB - pointA
+        if not isClockwise: # FIXME: Do have these branches the right way around?
+          vec.coord1, vec.coord2 = -vec.coord2, vec.coord1
+        else:
+          vec.coord1, vec.coord2 = vec.coord2, -vec.coord1
+        pointC = vec.div(vec.dist2D()).mul(saggita) + mid
+        geom = Curve(obsId, isClockwise, radius, pointA, pointC, pointB)
+        segments[obsId] = [geom]
+        obs.geom = geom
       else:
         print("Unexpected observedVector topology-type: ", observation["topology"]["type"])
     observationGroups[group["id"]] = observations

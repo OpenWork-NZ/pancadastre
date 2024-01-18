@@ -48,14 +48,15 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
     trans = Transformer.from_crs(fileproj, proj)
     obs.populateProperties() # Make them more legible!
     if isinstance(obs, ReducedObservation) or (
-        isinstance(obs, ReducedArcObservation) and obs.geom is None):
+        isinstance(obs, ReducedArcObservation) and obs.geom is None) or (
+        isinstance(obs, ArcByChord) and obs.geom is None):
       return {
           'type': "LineString",
           'featureType': 'observation',
           'coordinates': [transform(obs.setupPoint, trans),
               transform(obs.targetPoint, trans)],
         }
-    elif isinstance(obs, ReducedArcObservation) and obs.geom is not None:
+    elif (isinstance(obs, ReducedArcObservation) or isinstance(obs, ArcByChord)) and obs.geom is not None:
       return {
         'type': "LineString",
         'featureType': 'observation',
@@ -86,6 +87,8 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
         'featureType': 'cubicSpline',
         'coordinates': [transform(pt, trans) for pt in obs.interpolatedPath()]
       }
+    elif isinstance(obs, ArcByChord):
+      return
     else:
       print("Unexpected observation type!", type(obs))
   fileproj = data.projection.horizontal
@@ -195,50 +198,6 @@ def exportJSONfgParcel(data, file = None, isGeoJSON = False):
       'type': 'Polygon',
       'coordinates': [simplifyPoly(trans, Geom.flatten(geom.segments)) for geom in parcel.geom]
     }
-  def exportObs(obs, proj):
-    trans = Transformer.from_crs(fileproj, proj)
-    obs.populateProperties() # Make them more legible!
-    if isinstance(obs, ReducedObservation) or (
-        isinstance(obs, ReducedArcObservation) and obs.geom is None):
-      return {
-          'type': "LineString",
-          'featureType': 'observation',
-          'coordinates': [transform(obs.setupPoint, trans),
-              transform(obs.targetPoint, trans)],
-        }
-    elif isinstance(obs, ReducedArcObservation) and obs.geom is not None:
-      return {
-        'type': "LineString",
-        'featureType': 'observation',
-        'coordinates': simplifyPoly(trans, Geom.flatten([obs.geom])),
-      }
-    elif isinstance(obs, RedHorizPos):
-      return {
-        'type': "Point",
-        'featureType': 'observation',
-        'coordinates': transform(obs, trans),
-      }
-    elif isinstance(obs, SubtendedAngle):
-      return {
-        #'type': "Point",
-        #'featureType': 'subtendedAngle',
-        #'coordinates': transform(obs.setupPt, trans)
-      }
-    elif isinstance(obs, CircleByCenter):
-      obs.properties["radius"] = obs.radius
-      return {
-        #'type': "Point",
-        #'featureType': 'circle',
-        #'coordinates': transform(obs.centerSetup.point, trans)
-      }
-    elif isinstance(obs, CubicSplineObservation):
-      return {
-        'type': "LineString",
-        'featureType': 'cubicSpline',
-        'coordinates': [transform(pt, trans) for pt in obs.interpolatedPath()]
-      }
-    else:
-      print("Unexpected observation type!", type(obs))
   fileproj = data.projection.horizontal
   if fileproj[:5] == "epsg:": fileproj = fileproj[5:]
   trans = Transformer.from_crs(fileproj, 'wgs84')
