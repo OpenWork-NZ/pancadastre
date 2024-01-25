@@ -22,6 +22,7 @@ class ReferencedCSD:
     self.rel = rel
     self.role = role
     self.bearing = bearing
+    if isinstance(time, dict): time = time["date"]
     self.time = datetime.fromisoformat(time)
 
 class SupportingDocument:
