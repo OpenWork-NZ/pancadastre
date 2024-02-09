@@ -71,7 +71,11 @@ def importCSDM(file):
     for observation in group["features"]:
       if "id" in observation: isUID(observation["id"])
       # FIXME: Is it a bug if a point doesn't have a measure? Should this be reported?
-      measure = measures.get(observation.get("id")) or Measure.fromProperties({}, {})
+      measure = measures.get(observation.get("id"))
+      if measure is None:
+        measure = Measure.fromProperties({}, {})
+        measure.is_clockwise = None # Code could be cleaner, constructors set it to false.
+        print("Expected to find measurements corresponding to observation", observation.get("id"), " but found none!")
       geoms = []
       if observation["topology"]["type"].lower() == "linestring":
         for i in range(1, len(observation["topology"]["references"])):
@@ -98,11 +102,14 @@ def importCSDM(file):
         if isinstance(startname, dict): startname = startname.get("label", start["id"])
         endname = end["properties"].get("name") or {}
         if isinstance(endname, dict): endname = endname.get("label", end["id"])
-        obs = ReducedArcObservation(None, instrument(start["id"], startname, None, start[""]), instrument(end["id"], endname, None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start.get("time", data.get("time")), start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
+        isClockwise = measure.is_clockwise
+        if isClockwise is None and "orientation" in observation["topology"]:
+          isClockwise = observation["topology"]["orientation"] == "cw"
+        obs = ReducedArcObservation(None, instrument(start["id"], startname, None, start[""]), instrument(end["id"], endname, None, end[""]), measure.azimuth, measure.radius, measure.dist, isClockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start.get("time", data.get("time")), start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
         observations.append(obs)
         observationsIndex[observation["id"]] = obs
 
-        geom = Curve(observation["id"], measure.is_clockwise, measure.radius, start[""], mid[""], end[""])
+        geom = Curve(observation["id"], isClockwise, measure.radius, start[""], mid[""], end[""])
         segments[observation["id"]] = [geom]
         obs.geom = geom
         obs.mid = mid
@@ -114,11 +121,12 @@ def importCSDM(file):
         startname = start["properties"].get("name") or {}
         if isinstance(startname, dict): startname = startname.get("label", start["id"])
         endname = end["properties"].get("name") or {}
-        obs = ReducedArcObservation(None, instrument(start["id"], startname, None, start[""]), instrument(end["id"], endname, None, end[""]), measure.azimuth, measure.radius, measure.dist, measure.is_clockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start.get("time", data.get("time")), start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
+        isClockwise = measure.is_clockwise if measure.is_clockwise is not None else observation["topology"]["orientation"] == "cw"
+        obs = ReducedArcObservation(None, instrument(start["id"], startname, None, start[""]), instrument(end["id"], endname, None, end[""]), measure.azimuth, measure.radius, measure.dist, isClockwise, measure.equipment, measure.angleAccuracy, measure.arcType, observation["id"], start.get("time", data.get("time")), start["properties"], measure.distanceQuality, measure.distanceAccuracy, measure.angleQuality, measure = measure)
         observations.append(obs)
         observationsIndex[observation["id"]] = obs
 
-        geom = Curve.from_center(observation["id"], measure.is_clockwise, measure.radius, start[""], mid[""], end[""])
+        geom = Curve.from_center(observation["id"], isClockwise, measure.radius, start[""], mid[""], end[""])
         segments[observation["id"]] = [geom]
         obs.geom = geom
         obs.center = mid
@@ -156,6 +164,7 @@ def importCSDM(file):
         pointB = pointsIndex[d(observation["topology"]["references"][1])][""]
         radius = observation["topology"]["radius"]
         isClockwise = observation["topology"].get("orientation", "cw") == "cw"
+        if measure.is_clockwise is not None: isClockwise = measure.is_clockwise
 
         obs = ArcByChord(obsId, pointA, pointB, radius, isClockwise, observation.get("properties"))
         observations.append(obs)
