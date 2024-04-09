@@ -1,18 +1,15 @@
-Projection:	epsg:4326
+Projection:	epsg:4167
 Name:	DP 572532
 
 Monuments:	3
-	RM E DP 119552	-36.9307359096,174.7501603083	nz-monument-state:original	nz-monument-condition:markfound
-	ALP I DP 481392	-36.9314093194,174.7508196767	nz-monument-state:original	nz-monument-condition:markfound
-	RM C DP 119552 (EQ9W)	-36.930903937,174.749997996	nz-monument-state:original	nz-monument-condition:markfound
-Points:	3
-	None	nz-monument-state:original	-36.9307359096,174.7501603083
-	None	nz-monument-state:original	-36.9314093194,174.7508196767
-	None	nz-monument-state:original	-36.930903937,174.749997996
+	None	RM E DP 119552	BoundaryMark	174.7501603083,-36.9307359096	nz-monument-state:original	nz-monument-condition:markfound	None
+	None	ALP I DP 481392	CadastralMark	174.7508196767,-36.9314093194	nz-monument-state:original	nz-monument-condition:markfound	None
+	None	RM C DP 119552 (EQ9W)	GeodeticMark	174.749997996,-36.930903937	nz-monument-state:original	nz-monument-condition:markfound	XX FFF
 Parcels:	0
-Instruments:	2
-	RM E DP 119552	None	-36.9307359096,174.7501603083
-	RM C DP 119552 (EQ9W)	None	-36.930903937,174.749997996
 Observations:	1
 		ov
-	l973158	None	nz-surveypoint-purpose:boundary	RM E DP 119552	RM C DP 119552 (EQ9W)	None	None
+	l973158	undated	nz-surveypoint-purpose:boundary	RM E DP 119552	RM C DP 119552 (EQ9W)	None	None
+Annotations:	1
+	(nz-survey-docroles:fieldbook)	None
+References:	1
+	DP 119552	None	None (None)	None	0.001	2022-05-23 00:00:00

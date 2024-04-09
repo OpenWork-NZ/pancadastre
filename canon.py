@@ -13,7 +13,7 @@ def importCSDM(file):
   data = json.load(file)
   assert data["type"] == "FeatureCollection"
   projection = Projection(data.get("compoundCRS", data.get("horizontalCRS")), data.get("compoundCRS", data.get("verticalDatum")))
-  annotations = [Annotation(ann.get("role"), ann.get("id"), ann["description"]) for ann in data.get("annotations", [])]
+  annotations = [Annotation(ann.get("role"), ann.get("id"), ann.get("description")) for ann in data.get("annotations", [])]
   metadata = SurveyMetadata(data["name"], None, None, None, None, None, data["purpose"], None, None, None, annotations)
   
   instruments = []
@@ -22,7 +22,7 @@ def importCSDM(file):
     instruments.append(ret)
     return ret
 
-  referencedCSDs = [ReferencedCSD(ref["id"], ref["name"], ref.get("adminUnit", {}).get("href"), ref.get("adminUnit", {}).get("rel"), ref.get("adminUnit", {}).get("role"), ref["bearingRotation"], ref["time"]) for ref in data.get("referencedCSDs", [])]
+  referencedCSDs = [ReferencedCSD(ref.get("id"), ref["name"], ref.get("adminUnit", {}).get("href"), ref.get("adminUnit", {}).get("rel"), ref.get("adminUnit", {}).get("role"), ref["bearingRotation"], ref["time"]) for ref in data.get("referencedCSDs", [])]
   referencedDocs = [SupportingDocument(doc["title"], doc["href"], doc.get("role"), doc.get("rel")) for doc in data.get("supportingDocuments", [])]
 
   monuments = []
