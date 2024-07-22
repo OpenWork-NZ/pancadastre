@@ -9,7 +9,7 @@ class Cadastre:
     self.monuments = monuments
     self.points = points
     self.parcels = parcels
-    self.survey = survey # Haven't actually used the multiplicity here... Merge it's fields in?
+    self.survey = survey or Survey(None, None, None) # Haven't actually used the multiplicity here... Merge it's fields in?
     self.boundaries = boundaries # Any survey boundary vectors
     self.referencedCSDs = referencedCSDs
     self.supportingDocs = supportingDocs
@@ -158,6 +158,7 @@ class Point:
 
   def dist2D(self):
     return sqrt(self.coord1*self.coord1 + self.coord2*self.coord2)
+
 class Parcel:
   def __init__(self, name, area, type, state, klass, format, center, geom, titleDoc, address=None, desc = None, properties = None, oid = None):
     props = properties or {}

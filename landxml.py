@@ -32,7 +32,7 @@ def importLandXML(file):
   points = []
   for pointEl in file.find('{http://www.landxml.org/schema/LandXML-1.2}CgPoints'):
     coords = list(map(float, pointEl.text.split()))
-    if len(coords) != 2: continue
+    if len(coords) not in [2, 3]: continue
 
     point = Point(pointEl.get('pntSurv'), pointEl.get('name'), pointEl.get('state'), # difference in ePlan.
                   coords[0], coords[1], coords[2] if len(coords) >= 3 else None, pointEl.get('oID'))
