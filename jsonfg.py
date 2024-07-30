@@ -41,10 +41,19 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
 
   def exportGeom(parcel, proj):
     trans = Transformer.from_crs(fileproj, proj)
-    return {
-      'type': 'Polygon',
-      'coordinates': [simplifyPoly(trans, Geom.flatten(geom.segments)) for geom in parcel.geom]
-    }
+    if all(isinstance(face, Face) for geom in parcel.geom for face in geom.segments):
+      return {
+        'type': 'Polyhedron',
+        'coordinates': [
+          [simplifyPoly(trans, Geom.flatten(face))]
+          for geom in parcel.geom if isinstance(geom, Face)
+          for face in geom.faces]
+      }
+    else:
+      return {
+        'type': 'Polygon',
+        'coordinates': [simplifyPoly(trans, Geom.flatten(geom.segments)) for geom in parcel.geom]
+      }
   def exportObs(obs, proj):
     trans = Transformer.from_crs(fileproj, proj)
     obs.populateProperties() # Make them more legible!
@@ -206,10 +215,19 @@ def exportJSONfgParcel(data, file = None, isGeoJSON = False):
 
   def exportGeom(parcel, proj):
     trans = Transformer.from_crs(fileproj, proj)
-    return {
-      'type': 'Polygon',
-      'coordinates': [simplifyPoly(trans, Geom.flatten(geom.segments)) for geom in parcel.geom]
-    }
+    if all(isinstance(face, Face) for geom in parcel.geom for face in geom.segments):
+      return {
+        'type': 'Polyhedron',
+        'coordinates': [
+          [simplifyPoly(trans, Geom.flatten(face))]
+          for geom in parcel.geom if isinstance(geom, Face)
+          for face in geom.faces]
+      }
+    else:
+      return {
+        'type': 'Polygon',
+        'coordinates': [simplifyPoly(trans, Geom.flatten(geom.segments)) for geom in parcel.geom]
+      }
   fileproj = data.projection.horizontal
   if fileproj[:5] == "epsg:": fileproj = fileproj[5:]
   trans = Transformer.from_crs(fileproj, 'wgs84')

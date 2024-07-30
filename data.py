@@ -204,8 +204,9 @@ class Address: # Ask Nick if there's a better address model
     self.adminArea = adminArea
 
 class Geom:
-  def __init__(self, name, segments):
+  def __init__(self, name, segments, type="Feature"):
     self.name = name # Identifier
+    self.type = type
     self.segments = segments
 
   @staticmethod
@@ -351,6 +352,22 @@ class Cubic(Segment):
 
   def asObs(self):
     return CubicSplineObservation(self.id, self.startTangent, self.endTangent, self.controlPoints, self.properties)
+
+class Face:
+  def __init__(self, id, type='Feature', faces=[]):
+    self.id = id
+    self.type = type
+    self.faces = faces
+
+    if len(self.faces) == 0:
+      self.start = self.end = Point("", "Null Island", "", 0, 0)
+    else:
+      self.start = self.faces[0][0].start
+      self.end = self.faces[-1][-1].end
+
+  def __iter__(self):
+    yield self.start
+    yield self.end
 
 class Feature:
   def __init__(self, desc, name, geom, properties = {}):

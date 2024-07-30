@@ -185,6 +185,17 @@ def importCSDM(file):
       else:
         print("Unexpected observedVector topology-type: ", observation["topology"]["type"])
     observationGroups[group["id"]] = observations
+
+  for group in data["faces"]:
+    for face in group["features"]:
+      isUID(face["id"])
+      assert face["topology"]["type"] == "Polygon"
+      segments[face["id"]] = [Face(
+          face["id"],
+          face.get('type', "Feature"),
+          [[segment for ref in refs for segment in segments[d(ref)]] for refs in face["topology"]["references"]]
+        )]
+
   for group in data["observedVectors"]:
     for observation in group["features"]:
       if observation["topology"]["type"].lower() == "subtendedangle":
@@ -209,7 +220,8 @@ def importCSDM(file):
       refs = geom["topology"]["references"]
       if len(refs) == 1 and isinstance(refs[0], list): refs = refs[0] # Handle double-nesting.
       geoms.append(Geom(geom["id"],
-        [segment for ref in refs for segment in segments.get(ref if isinstance(ref, str) else ref.get('$ref'), [])]))
+        [segment for ref in refs for segment in segments.get(ref if isinstance(ref, str) else ref.get('$ref'), [])],
+        geom.get("type", "Feature")))
       parcels.append(Parcel.fromProperties(None, None, geoms, geom["properties"], geom["id"], geom.get("featureType"))) # TODO: Differentiate primary vs secondary
     
   return Cadastre(projection, {}, None, monuments, points, parcels, Survey(metadata, instruments, observationGroups), referencedCSDs = referencedCSDs, supportingDocs = referencedDocs)
@@ -316,7 +328,7 @@ def exportCSDM(data, file):
           'role': ref.role
         },
         'bearingRotation': ref.bearing,
-        'time': ref.time
+        'time': str(ref.time)
       } for ref in data.referencedCSDs],
     'points': [{
       'id': 'surveymarks',
@@ -342,7 +354,7 @@ def exportCSDM(data, file):
       'properties': None,
       'features': [{
         'id': geom.name or j,
-        'type': 'Feature',
+        'type': geom.type,
         'place': None,
         'topology': {
           'type': 'Polygon',
