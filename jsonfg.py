@@ -284,7 +284,45 @@ def exportJSONfgParcel(data, file = None, isGeoJSON = False):
         'geometry': exportGeom(parcel, 'wgs84'),
         'place': exportGeom(parcel, fileproj),
         'properties': parcel.properties
-      } for i, parcel in enumerate(data.parcels)]
+      } for i, parcel in enumerate(data.parcels)] + [{
+        'id': tins.id or ('tin'+str(i)),
+        'type': "FeatureCollection",
+        'featureType': tins.type,
+        'properties': tins.properties,
+        'features': [{
+          'id': tin.id or ('TIN'+str(j)),
+          'type': "feature",
+          'geometry': {
+            'type': "TIN",
+            'coordinates': [
+                [transform(seg.start) for segs in face.faces for seg in segs]
+                for faces in tin.faces for face in faces]
+          },
+          'place': {
+            'type': "TIN",
+            'coordinates': [
+                [list(seg.start) for segs in face.faces for seg in segs]
+                for faces in tin.faces for face in faces]
+          }
+        } for j, tin in enumerate(tins.features)]
+      } for i, tins in enumerate(data.surfaceTINs)] + [{
+        'id': curves.id or ("tic" + str(i)),
+        'type': "FeatureCollection",
+        'featureType': curves.type,
+        'properties': curves.properties,
+        'features': [{
+          'id': curve.id or ('TIC' + str(j)),
+          'type': "feature",
+          'geometry': {
+            'type': "MultiLineString",
+            'coordinates': simplifyPoly(trans, curve.topology)
+          },
+          'place': {
+            'type': "MultiLineString",
+            'coordinates': simplifyPoly(Transformer.from_crs(fileproj, fileproj), curve.topology)
+          }
+        } for j, curve in enumerate(curves.features)]
+      } for i, curves in enumerate(data.terrainIntersectionCurves)]
   }
   if file is not None: json.dump(ret, file, indent=4)
   else: return ret
