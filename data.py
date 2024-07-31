@@ -2,7 +2,7 @@ from datetime import datetime
 from math import floor, isclose, sqrt
 
 class Cadastre:
-  def __init__(self, projection, features, units, monuments, points, parcels, survey, boundaries = [], referencedCSDs = [], supportingDocs = []):
+  def __init__(self, projection, features, units, monuments, points, parcels, survey, boundaries = [], referencedCSDs = [], supportingDocs = [], surfaceTINs = [], terrainIntersectionCurves = []):
     self.projection = projection or Projection("epsg:4326")
     self.features = features
     self.units = units # Refactor to assign units directly against points, observations, etc?
@@ -13,6 +13,8 @@ class Cadastre:
     self.boundaries = boundaries # Any survey boundary vectors
     self.referencedCSDs = referencedCSDs
     self.supportingDocs = supportingDocs
+    self.surfaceTINs = surfaceTINs
+    self.terrainIntersectionCurves = terrainIntersectionCurves
 
 class ReferencedCSD:
   def __init__(self, id, name, href, rel, role, bearing, time):
@@ -31,6 +33,30 @@ class SupportingDocument:
     self.href = href
     self.role = role
     self.rel = rel
+
+class SurfaceTINs:
+  def __init__(self, id, type, features, properties = {}):
+    self.id = id
+    self.type = type
+    self.properties = properties
+    self.features = features
+
+class SurfaceTIN:
+  def __init__(self, id, faces):
+    self.id = id
+    self.faces = faces
+
+class TerrainIntersectionCurves:
+  def __init__(self, id, type, features, properties = {}):
+    self.id = id
+    self.type = type
+    self.features = features
+    self.properties = properties
+
+class TerrainIntersectionCurve:
+  def __init__(self, id, topology):
+    self.id = id
+    self.topology = topology
 
 class App:
   def __init__(self, app, appversion, appAuthors):

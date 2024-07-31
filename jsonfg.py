@@ -45,9 +45,10 @@ def exportJSONfg(data, file = None, isGeoJSON = False):
       return {
         'type': 'Polyhedron',
         'coordinates': [
-          [simplifyPoly(trans, Geom.flatten(face))]
-          for geom in parcel.geom if isinstance(geom, Face)
-          for face in geom.faces]
+          [transform(line.start, trans) for line in face]
+          for geom in parcel.geom
+          for segment in geom.segments
+          for face in segment.faces]
       }
     else:
       return {
@@ -219,9 +220,10 @@ def exportJSONfgParcel(data, file = None, isGeoJSON = False):
       return {
         'type': 'Polyhedron',
         'coordinates': [
-          [simplifyPoly(trans, Geom.flatten(face))]
-          for geom in parcel.geom if isinstance(geom, Face)
-          for face in geom.faces]
+          [transform(line.start, trans) for line in face]
+          for geom in parcel.geom
+          for segment in geom.segments
+          for face in segment.faces]
       }
     else:
       return {

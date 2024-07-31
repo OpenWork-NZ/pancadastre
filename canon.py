@@ -212,6 +212,33 @@ def importCSDM(file):
         obs = SubtendedAngle(observation["id"], start.get("time", data.get("time")), None, setup, backsight, target, observation["properties"])
         observationGroups[group["id"]].append(obs)
 
+  surfaceTINs = []
+  for tins in data.get("surfaceTin", []):
+    isUID(tins["id"])
+    assert tins["type"].lower() == "featurecollection"
+    features = []
+    for tin in tins["features"]:
+      isUID(tin["id"])
+      assert tin["type"].lower() == "feature"
+      assert tin["topology"]["type"].upper() == "TIN"
+      faces = [[segments[x][0] for x in face] for face in tin["topology"]["references"]]
+      assert all(isinstance(face, Face) for x in faces for face in x)
+      features.append(SurfaceTIN(tin["id"], faces))
+    surfaceTINs.append(SurfaceTINs(tins["id"], tins["featureType"], features, tins.get("properties", {})))
+
+  terrainIntersectionCurves = []
+  for curves in data.get("terrainIntersectionCurve", []):
+    isUID(curves["id"])
+    assert curves["type"].lower() == "featurecollection"
+    features = []
+    for curve in curves["features"]:
+      isUID(curve["id"])
+      assert curve["type"].lower() == "feature"
+      assert curve["topology"]["type"].lower() == "multilinestring"
+      topology = [y for x in curve["topology"]["references"] for y in segments[x]]
+      features.append(TerrainIntersectionCurve(curve["id"], topology))
+    terrainIntersectionCurves.append(TerrainIntersectionCurves(curves["id"], curves["featureType"], features, curves.get("properties", {})))
+
   parcels = []
   for parcel in data.get("parcels", []):
     for geom in parcel["features"]:
@@ -224,7 +251,7 @@ def importCSDM(file):
         geom.get("type", "Feature")))
       parcels.append(Parcel.fromProperties(None, None, geoms, geom["properties"], geom["id"], geom.get("featureType"))) # TODO: Differentiate primary vs secondary
     
-  return Cadastre(projection, {}, None, monuments, points, parcels, Survey(metadata, instruments, observationGroups), referencedCSDs = referencedCSDs, supportingDocs = referencedDocs)
+  return Cadastre(projection, {}, None, monuments, points, parcels, Survey(metadata, instruments, observationGroups), referencedCSDs = referencedCSDs, supportingDocs = referencedDocs, surfaceTINs = surfaceTINs, terrainIntersectionCurves = terrainIntersectionCurves)
 
 def exportCSDM(data, file):
   import json
@@ -382,6 +409,36 @@ def exportCSDM(data, file):
         'properties': obs.properties
       } for i, obs in enumerate(group)]
     } for groupName, group in data.survey.observationGroups.items()],
+    'surfaceTin': [{
+      'id': tins.id or ("tin"+str(i)),
+      'type': "FeatureCollection",
+      'featureType': tins.type,
+      'properties': tins.properties,
+      'features': [{
+        'id': tin.id or ("TIN"+str(j)),
+        'type': "feature",
+        'geometry': None,
+        'topology': {
+          'type': "TIN",
+          'references': [[y.id for y in x] for x in tin.faces]
+        }
+      } for j, tin in enumerate(tins.features)]
+    } for i, tins in enumerate(data.surfaceTINs)],
+    'terrainIntersectionCurve': [{
+      'id': curves.id or ("tic"+str(i)),
+      'type': "FeatureCollection",
+      'featureType': curves.type,
+      'properties': curves.properties,
+      'features': [{
+        'id': feature.id or ("TIC"+str(j)),
+        'type': "feature",
+        'geometry': None,
+        'topology': {
+          'type': "MultiLineString",
+          'references': [x.id for x in feature.topology]
+        }
+      } for j, feature in enumerate(curves.features)]
+    } for i, curves in enumerate(data.terrainIntersectionCurves)],
     'features': exportJSONfg(data)["features"] # I (Adrian) question of the value of this...
   }
   json.dump(ret, file, indent=4)
