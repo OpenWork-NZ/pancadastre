@@ -232,14 +232,23 @@ def exportJSONfgParcel(data, file = None, isGeoJSON = False):
       }
   fileproj = data.projection.horizontal
   if fileproj[:5] == "epsg:": fileproj = fileproj[5:]
-  trans = Transformer.from_crs(fileproj, 'wgs84')
+  vertproj = data.projection.vertical
+  if vertproj and vertproj != data.projection.horizontal:
+    if vertproj[:5] == "epsg:": vertproj = vertproj[5:]
+    fileproj = CompoundCRS(data.projection.horizontal + ';' + vertproj, components=[fileproj, vertproj])
+
+    dest = CompoundCRS('wgs84;' + vertproj, components=['wgs84', vertproj])
+    trans = Transformer.from_crs(fileproj, dest)
+  else:
+    trans = Transformer.from_crs(fileproj, 'wgs84')
   def transform(pt, transformer = trans):
     crs = transformer.target_crs
     if crs.name.lower().startswith("wgs 84"):
-      return list(reversed(transformer.transform(pt.coord1, pt.coord2)))
+      ret = list(transformer.transform(pt.coord1, pt.coord2, pt.coord3))
+      return [ret[1], ret[0], ret[2]] if len(ret) == 3 else [ret[1], ret[0]]
     else:
-      return list(transformer.transform(pt.coord1, pt.coord2))
- 
+      return list(transformer.transform(pt.coord1, pt.coord2, pt.coord3))
+
   ret = {
     '$schema': 'schema.json',
     'type': 'FeatureCollection',
