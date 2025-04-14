@@ -636,6 +636,7 @@ class RedHorizPos(Observation): # Spell out "Reduced"
     self.horizDatum = horizDatum
     self.coord1 = coord1
     self.coord2 = coord2
+    self.coord3 = None
     self.horizFix = horizFix
     self.order = order
     self.properties = properties or {}

@@ -365,7 +365,7 @@ def exportCSDM(data, file):
         'id': getattr(monument.point, 'objID', None) or i,
         'type': "Feature",
         'featureType': "SurveyPoint", # Could be "cadastralMark", etc?
-        'time': monument.point.date,
+        'time': str(monument.point.date), # Right fix?
         'place': {
           'type': "Point",
           'coordinates': [monument.point.coord1, monument.point.coord2] + ([monument.point.coord3] if monument.point.coord3 is not None else []) if monument.point is not None else []
@@ -441,4 +441,4 @@ def exportCSDM(data, file):
     } for i, curves in enumerate(data.terrainIntersectionCurves)],
     'features': exportJSONfg(data)["features"] # I (Adrian) question of the value of this...
   }
-  json.dump(ret, file, indent=4)
+  json.dump(ret, file, indent=4, default=str)
