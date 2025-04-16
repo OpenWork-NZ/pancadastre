@@ -1,4 +1,4 @@
-import data
+from data import *
 
 def loadWA_CSD(file):
   # NOTE: This code is dramatically incomplete...
@@ -8,16 +8,18 @@ def loadWA_CSD(file):
     def inner(func):
       typeHandlers[i] = func
       return func
+    return inner
   def unsupported(i):
     def inner(*fields):
       print("Ignoring unsupported row of type", i, "with fields", fields)
+    return inner
 
   points = []
   pointsIndex = {}
   pointsQuality = {} # Where do these go? In the observations?
   @t(10)
   def point(id, coord0, coord1, whatsit, quality, class0, class1, name, bool0):
-    pt = Point("", id.strip(), "", floot(coord0.strip()), float(coord1.strip()), id.strip())
+    pt = Point("", id.strip(), "", float(coord0.strip()), float(coord1.strip()), id.strip())
     points.append(pt)
     pointsIndex[id] = id
     pointsQuality[id] = quality

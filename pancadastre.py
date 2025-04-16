@@ -114,7 +114,7 @@ if __name__ == "__main__":
   argparser.add_argument('-X', '--LANDXML', help="LandXML input file", nargs='+')
   argparser.add_argument('-V', '--vocab', help="Jurisdictional vocabulary to align to")
   argparser.add_argument('-C', '--CSDM', help="JSON-Topology input file", nargs='+')
-  argparser.add_argument('-W', '--WA', help="Western Australia CSD input format (dramatically incomplete!)")
+  argparser.add_argument('-W', '--WA', help="Western Australia CSD input format (dramatically incomplete!)", nargs='+')
   argparser.add_argument('-T', '--CITYGML', help="CityGML input file", nargs='+')
   argparser.add_argument('--interpolate', help="Interpolate curves, possibly specifying length in meters of each segment (default 1m)",
       const=1, type=int, nargs='?')
