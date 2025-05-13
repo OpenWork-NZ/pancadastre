@@ -119,6 +119,7 @@ if __name__ == "__main__":
   argparser.add_argument('--interpolate', help="Interpolate curves, possibly specifying length in meters of each segment (default 1m)",
       const=1, type=int, nargs='?')
   argparser.add_argument('--epsg', help="Overwrite the projection being used.")
+  argparser.add_argument('-x', '--landxml', help="LandXML output file", nargs='?')
   argparser.add_argument('-j', '--jsonfg', help="JSONfg output file", const="?.json", nargs='?')
   argparser.add_argument('-k', '--jsonfgparcel', help="JSONfg output file for parcels", const="?.parcels.json", nargs='?')
   argparser.add_argument('-r', '--rdf', help="RDF syntax to output", const="ttl", nargs='?')
@@ -144,6 +145,9 @@ if __name__ == "__main__":
     if args.interpolate:
       interpCurves(data, args.interpolate)
 
+    if args.landxml:
+      with open(args.jsonfg.replace("?", filename), "w") as f: exportLandXML(data, f)
+      wrote_output = True
     if args.jsonfg:
       with open(args.jsonfg.replace("?", filename), "w") as f: exportJSONfg(data, f)
       wrote_output = True
