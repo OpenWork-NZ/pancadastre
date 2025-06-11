@@ -33,7 +33,7 @@ def importCSDM(file):
   for group in data["vectorObservations"]:
     for observation in group["features"]:
       measure = Measure.fromProperties(group["properties"], observation["properties"])
-      measures[observation["properties"]["hasFeatureOfInterest"]] = measure
+      measures[observation["properties"].get("hasFeatureOfInterest", "")] = measure # FIXME: Export didn't have this property?
 
   pointsIndex = {}
   for collection in data["points"]:
@@ -186,7 +186,7 @@ def importCSDM(file):
         print("Unexpected observedVector topology-type: ", observation["topology"]["type"])
     observationGroups[group["id"]] = observations
 
-  for group in data["faces"]:
+  for group in data.get("faces", []):
     for face in group["features"]:
       isUID(face["id"])
       assert face["topology"]["type"] == "Polygon"
